@@ -397,10 +397,23 @@ Définition de la stack à déployer :
 ## Génération des schémas d'architecture (draw.io)
 
 Schémas dans `docs/*.drawio` (format `mxfile`/`app.diagrams.net`, éditables dans draw.io/diagrams.net).
-Conventions de couleur reprises entre schémas : bleu `#dae8fc`/`#6c8ebf` pour les systèmes externes et
-le stockage (cloud, cylindre) ; vert `#d5e8d4`/`#82b366` pour les services applicatifs cœur (API,
-registre de modèles) ; jaune `#fff2cc`/`#d6b656` pour Airflow ; violet `#e1d5e7`/`#9673a6` pour le
-monitoring/dashboard.
+
+Convention de couleur générique (schémas fonctionnels/phase 4, palette pastel) : bleu `#dae8fc`/
+`#6c8ebf` pour les systèmes externes et le stockage (cloud, cylindre) ; vert `#d5e8d4`/`#82b366`
+pour les services applicatifs cœur (API, registre de modèles) ; jaune `#fff2cc`/`#d6b656` pour
+Airflow ; violet `#e1d5e7`/`#9673a6` pour le monitoring/dashboard.
+
+Palette spécifique au schéma **prod** (`docs/architecture_prod.drawio`, couleurs vives, une couleur
+distincte par service plutôt que par catégorie générique) :
+- PgSQL/Neon : vert `#2ecc71`/`#1e8449`
+- MLFlow : bleu roi `#4169e1`/`#27408b`
+- Buckets S3 : orange/marron `#d2691e`/`#7b3f00`
+- API de prédiction (Render) : rouge `#e74c3c`/`#a93226`
+- SMTP : gris `#95a5a6`/`#5f6a6a`
+- Real-time Payment API : violet (couleur de marque Jedha) `#8e44ad`/`#5b2c6f`
+- Dashboard Streamlit : anthracite `#2c3e50`/`#1b2631`
+- Airflow : jaune vif `#f1c40f`/`#b7950b`
+(texte en blanc `#ffffff` sur les remplissages saturés pour la lisibilité, sauf sur fond jaune)
 
 Pour un schéma d'**architecture prod** (Phase 5 + Phase 6, cf. `docs/architecture_prod.drawio`) :
 - ne pas détailler les conteneurs internes d'Airflow (pas de `airflow-scheduler`,

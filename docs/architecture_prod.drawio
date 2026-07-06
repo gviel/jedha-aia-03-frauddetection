@@ -11,41 +11,41 @@
         </mxCell>
 
         <!-- External systems -->
-        <mxCell id="jedha" value="Real-time Payment API&#10;(sdacelo-real-time-fraud-detection.hf.space)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="jedha" value="Real-time Payment API&#10;(sdacelo-real-time-fraud-detection.hf.space)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#8e44ad;strokeColor=#5b2c6f;fontColor=#ffffff;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="40" y="70" width="300" height="110" as="geometry" />
         </mxCell>
-        <mxCell id="smtp" value="SMTP Gmail" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="smtp" value="SMTP Gmail" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#95a5a6;strokeColor=#5f6a6a;fontColor=#ffffff;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="40" y="700" width="220" height="80" as="geometry" />
         </mxCell>
 
         <!-- Airflow (single block, local) -->
-        <mxCell id="airflow" value="Airflow 3.2.2&#10;(local — LocalExecutor)&#10;&#10;3 DAGs :&#10;— ETL &amp; Fraud Detection (1/min)&#10;— Fraud Report (quotidien)&#10;— Model Training (conditionnel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
+        <mxCell id="airflow" value="Airflow 3.2.2&#10;(local — LocalExecutor)&#10;&#10;3 DAGs :&#10;— ETL &amp; Fraud Detection (1/min)&#10;— Fraud Report (quotidien)&#10;— Model Training (conditionnel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1c40f;strokeColor=#b7950b;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
           <mxGeometry x="420" y="240" width="340" height="300" as="geometry" />
         </mxCell>
 
         <!-- Data layer -->
-        <mxCell id="neon" value="PgSQL Neon&#10;fraud-detection-db&#10;(real_time_transactions)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="neon" value="PgSQL Neon&#10;fraud-detection-db&#10;(real_time_transactions)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#2ecc71;strokeColor=#1e8449;fontColor=#ffffff;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="460" y="600" width="220" height="130" as="geometry" />
         </mxCell>
-        <mxCell id="s3Trx" value="S3 bucket-fraud-detection-gviel&#10;(transactions JSON, fraudTest.csv,&#10;client_trx_analysis.csv)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="s3Trx" value="S3 bucket-fraud-detection-gviel&#10;(transactions JSON, fraudTest.csv,&#10;client_trx_analysis.csv)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="740" y="600" width="300" height="140" as="geometry" />
         </mxCell>
 
         <!-- MLFlow + artifact store -->
-        <mxCell id="mlflow" value="MLFlow v3.7.0&#10;(gviel-mlflow37.hf.space)&#10;tracking + registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="mlflow" value="MLFlow v3.7.0&#10;(gviel-mlflow37.hf.space)&#10;tracking + registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4169e1;strokeColor=#27408b;fontColor=#ffffff;fontSize=16;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="820" y="80" width="300" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="s3Mlflow" value="S3 aws-s3-mlflow&#10;(artefacts modèles)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+        <mxCell id="s3Mlflow" value="S3 aws-s3-mlflow&#10;(artefacts modèles)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=14;" vertex="1" parent="1">
           <mxGeometry x="860" y="260" width="240" height="110" as="geometry" />
         </mxCell>
 
         <!-- Fraud Detection API (Render) -->
-        <mxCell id="renderApi" value="Fraud Detection API (Render)&#10;jedha-aia-03-frauddetection&#10;.onrender.com&#10;/predict · /health · /reload-model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+        <mxCell id="renderApi" value="Fraud Detection API (Render)&#10;jedha-aia-03-frauddetection&#10;.onrender.com&#10;/predict · /health · /reload-model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e74c3c;strokeColor=#a93226;fontColor=#ffffff;fontSize=16;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="1200" y="250" width="320" height="160" as="geometry" />
         </mxCell>
 
         <!-- Streamlit Dashboard -->
-        <mxCell id="dashboard" value="Dashboard Streamlit&#10;Community Cloud&#10;(suivi transactions/statut)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=15;" vertex="1" parent="1">
+        <mxCell id="dashboard" value="Dashboard Streamlit&#10;Community Cloud&#10;(suivi transactions/statut)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c3e50;strokeColor=#1b2631;fontColor=#ffffff;fontSize=15;" vertex="1" parent="1">
           <mxGeometry x="1600" y="270" width="260" height="130" as="geometry" />
         </mxCell>
 
