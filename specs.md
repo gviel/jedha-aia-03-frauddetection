@@ -96,12 +96,16 @@ ce script doit pouvoir
       cf. note ci-dessous)
 - tagger les modèles avec des tags { env=prod|test, status=best|challenger|worst}; le meilleur sera taggé avec status=best, le pire avec status=worst et les autres en status=challenger
     - en prod : pousser le modèle vers le bucket S3 de MLFlow
-    - en test : sauver le modèle en local dans un répertoire model au format pkl, ET logguer
-      params/métriques/tags dans un tracking store MLFlow **local** (SQLite `work/mlflow_local.db`,
-      jamais poussé nulle part) plutôt que dans l'expérience hébergée partagée avec la prod — ces runs ne sont
-      jamais servis (pas de modèle poussé sur S3), les logguer dans l'historique partagé ne ferait
-      qu'accumuler du bruit de dev/itération et risquerait qu'un run de test pollue la sélection
-      "meilleur modèle" utilisée par l'API en prod (cf. piège Render documenté dans CLAUDE.md)
+    - en test : sauver le modèle en local dans un répertoire model au format pkl, ET basculer
+      automatiquement le tracking MLFlow sur un store **SQLite local** (`work/mlflow_local.db`,
+      jamais poussé nulle part) au lieu de l'expérience hébergée `https://gviel-mlflow37.hf.space/`
+      partagée avec la prod — permet de s'entraîner/itérer en local (`make train ARGS="--env
+      test"`) sans dépendre du réseau/des credentials du serveur MLFlow hébergé, et sans y
+      accumuler de bruit : ces runs ne sont de toute façon jamais servis (pas de modèle poussé sur
+      S3), les logguer dans l'historique partagé ne ferait qu'y ajouter du bruit de dev/itération
+      et risquerait qu'un run de test pollue la sélection "meilleur modèle" utilisée par l'API en
+      prod (cf. piège Render documenté dans CLAUDE.md). Pour consulter ces runs locaux :
+      `mlflow ui --backend-store-uri sqlite:///work/mlflow_local.db`
 
 #### Note de rappel sur SMOTE (Synthetic Minority Over-sampling Technique):
 Rappel de ce qui est fait pas la lib imblearn.over_sampling.SMOTE (à faire toujours après le split train/test pas avant!)
