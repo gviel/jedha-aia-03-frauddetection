@@ -1,0 +1,12 @@
+pandas
+numpy
+geopy
+scikit-learn==1.4.2
+imbalanced-learn
+xgboost==3.2.0
+lightgbm==4.6.0
+mlflow==3.7.0
+pyyaml
+python-dotenv
+boto3
+pytest

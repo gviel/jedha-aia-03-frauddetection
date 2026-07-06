@@ -1,0 +1,86 @@
+experiment_name: fraud_detection
+
+# Taux du split train/test (appliqué avant tout rééchantillonnage).
+test_size: 0.2
+
+# Politique de rééchantillonnage du train set (dataset déséquilibré) — appliquée
+# après le split train/test, jamais avant.
+#   method: none | under_sample | smote
+#   sampling_strategy : ratio cible minoritaire/majoritaire (0.1 = 10%, "auto" = 50/50)
+#   k_neighbors       : voisins SMOTE (3 à 5 recommandé) — ignoré par under_sample
+#   random_state      : graine aléatoire
+resampling:
+  method: none  # smote désactivé le 2026-07-06 : dégradait pr_auc sur tous les modèles (ablation, cf. CLAUDE.md)
+  sampling_strategy: 0.1
+  k_neighbors: 5
+  random_state: 42
+
+# Chaque entrée représente un modèle à entraîner.
+# Un même type de modèle peut apparaître plusieurs fois avec des paramètres différents.
+#
+# Champs spéciaux (non transmis au constructeur) :
+#   is_regressor: true         → utilise predict() au lieu de predict_proba()
+#   scale_pos_weight: auto     → remplacé par n_neg/n_pos calculé depuis les données
+#   scale_features: true       → wrap le modèle dans Pipeline(StandardScaler(), modèle)
+#                                 (nécessaire pour LogisticRegression : zip/city_pop très
+#                                 supérieurs en échelle à lat/long font ramer lbfgs sans ça)
+#
+# n_jobs: 6 (pas -1) sur les modèles qui le supportent — laisse 2 cœurs libres sur une
+# machine à 8 cœurs pour ne pas la bloquer pendant l'entraînement. LogisticRegression n'a
+# pas de n_jobs ici : sans effet avec solver=lbfgs en classification binaire.
+
+models:
+
+  - name: logistic_regression_balanced
+    class: sklearn.linear_model.LogisticRegression
+    scale_features: true
+    params:
+      class_weight: balanced
+      max_iter: 1000
+      solver: lbfgs
+      C: 1.0
+
+  - name: xgboost_binary
+    class: xgboost.XGBClassifier
+    params:
+      scale_pos_weight: auto
+      objective: binary:logistic
+      n_estimators: 200
+      learning_rate: 0.05
+      max_depth: 6
+      verbosity: 0
+      eval_metric: aucpr
+      n_jobs: 6
+
+  - name: lightgbm_unbalanced
+    class: lightgbm.LGBMClassifier
+    params:
+      is_unbalance: true
+      n_estimators: 500  # 200→500 : +4.2% pr_auc (0.799→0.832), ablation du 2026-07-06, cf. CLAUDE.md
+      learning_rate: 0.05
+      num_leaves: 63
+      verbose: -1
+      n_jobs: 6
+
+  - name: random_forest_balanced
+    class: sklearn.ensemble.RandomForestClassifier
+    params:
+      class_weight: balanced
+      n_estimators: 200
+      max_depth: 10
+      random_state: 42
+      n_jobs: 6
+
+  # Variante issue du hyperparameter tuning du 2026-07-06 (cf. CLAUDE.md) — ajoutée à côté de
+  # lightgbm_unbalanced pour comparaison continue lors des prochains entraînements.
+  # (lgbm_more_trees a été retiré : mêmes hyperparamètres que lightgbm_unbalanced depuis son
+  # passage à n_estimators=500, entrée redondante.)
+  - name: lgbm_slow_more_leaves
+    class: lightgbm.LGBMClassifier
+    params:
+      is_unbalance: true
+      n_estimators: 800
+      learning_rate: 0.02
+      num_leaves: 127
+      verbose: -1
+      n_jobs: 6
