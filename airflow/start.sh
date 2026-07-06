@@ -13,40 +13,39 @@ fi
 
 export AIRFLOW_UID=$(id -u)
 
-# Bascule prod : APP_ENV=prod ./start.sh pointe les DAGs 3.1/3.2 vers Neon (DATABASE_URL_PROD)
-# au lieu du fraud-db local. On ne source pas tout ../.env (écraserait DATABASE_URL et d'autres
-# vars déjà utilisées ici) : on lit uniquement DATABASE_URL_PROD si elle n'est pas déjà exportée.
-if [ -z "${DATABASE_URL_PROD:-}" ] && [ -f ../.env ]; then
-    DATABASE_URL_PROD="$(grep -E '^DATABASE_URL_PROD=' ../.env | tail -1 | cut -d= -f2-)"
+# .env.test (commun) + .env.production (additif, prod seulement) — cf. .env.template à la
+# racine pour la doc complète. On ne source pas les fichiers entiers (écraserait des vars déjà
+# exportées) : lecture ciblée var par var, uniquement si pas déjà présente dans l'environnement.
+if [ -z "${DATABASE_URL_PROD:-}" ] && [ -f ../.env.production ]; then
+    DATABASE_URL_PROD="$(grep -E '^DATABASE_URL_PROD=' ../.env.production | tail -1 | cut -d= -f2-)"
 fi
 
 # Email (alerte fraude + rapport quotidien) + reload modèle (DAG 3.3 -> API /reload-model) —
-# indépendant du mode APP_ENV, lu depuis ../.env si pas déjà exporté (mêmes lecture ciblée
-# que DATABASE_URL_PROD/AWS ci-dessous).
+# indépendant du mode APP_ENV, lu depuis ../.env.test si pas déjà exporté.
 for _var in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD FRAUD_ALERT_EMAIL REPORT_EMAIL MODEL_RELOAD_TOKEN; do
-    if [ -z "${!_var:-}" ] && [ -f ../.env ]; then
-        export "$_var=$(grep -E "^${_var}=" ../.env | tail -1 | cut -d= -f2-)"
+    if [ -z "${!_var:-}" ] && [ -f ../.env.test ]; then
+        export "$_var=$(grep -E "^${_var}=" ../.env.test | tail -1 | cut -d= -f2-)"
     fi
 done
 
 export APP_ENV="${APP_ENV:-test}"
 if [ "$APP_ENV" = "prod" ]; then
     if [ -z "${DATABASE_URL_PROD:-}" ]; then
-        echo "ERREUR : APP_ENV=prod nécessite DATABASE_URL_PROD (dans ../.env ou l'environnement)." >&2
+        echo "ERREUR : APP_ENV=prod nécessite DATABASE_URL_PROD (dans ../.env.production ou l'environnement)." >&2
         exit 1
     fi
     export DATABASE_URL="${DATABASE_URL:-$DATABASE_URL_PROD}"
 
     # store_trx.py bascule aussi sur l'upload S3 (au lieu du fichier local) quand APP_ENV=prod —
     # il faut donc aussi les credentials AWS dans les conteneurs Airflow (même lecture ciblée
-    # de ../.env, sans écraser d'autres vars).
+    # de ../.env.production, sans écraser d'autres vars).
     for _var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION; do
-        if [ -z "${!_var:-}" ] && [ -f ../.env ]; then
-            export "$_var=$(grep -E "^${_var}=" ../.env | tail -1 | cut -d= -f2-)"
+        if [ -z "${!_var:-}" ] && [ -f ../.env.production ]; then
+            export "$_var=$(grep -E "^${_var}=" ../.env.production | tail -1 | cut -d= -f2-)"
         fi
     done
     if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
-        echo "ERREUR : APP_ENV=prod nécessite AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (dans ../.env ou l'environnement)." >&2
+        echo "ERREUR : APP_ENV=prod nécessite AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (dans ../.env.production ou l'environnement)." >&2
         exit 1
     fi
     export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-eu-west-3}"

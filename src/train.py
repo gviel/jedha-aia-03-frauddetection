@@ -49,7 +49,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-load_dotenv()
+load_dotenv(".env.test")
+load_dotenv(".env.production")  # additif (DATABASE_URL_PROD, AWS_*) — n'écrase pas .env.test
 warnings.filterwarnings("ignore")
 
 # ── Constantes ────────────────────────────────────────────────────────────────

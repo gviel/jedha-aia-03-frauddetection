@@ -19,8 +19,10 @@ __pycache__/
 dist/
 build/
 
-# Environnement
+# Environnement (.env.template est commité, sert de doc pour .env.test/.env.production)
 .env
+.env.test
+.env.production
 api/.env
 
 # MCP (contient des credentials en clair — cf. .mcp.json.template)

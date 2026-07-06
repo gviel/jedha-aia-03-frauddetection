@@ -25,7 +25,8 @@ from fastapi import FastAPI, HTTPException, status
 
 from schemas import Transaction, PredictionResponse
 
-load_dotenv()
+load_dotenv(".env.test")
+load_dotenv(".env.production")  # additif (DATABASE_URL_PROD, AWS_*) — n'écrase pas .env.test
 
 MODEL_ENV        = os.getenv("MODEL_ENV", "test")
 MLFLOW_URI       = os.getenv("MLFLOW_URI", "https://gviel-mlflow37.hf.space/")
