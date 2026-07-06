@@ -1,0 +1,260 @@
+---
+# Stack Airflow dédiée au projet Fraud Detection
+# Airflow 3.2.2 — LocalExecutor — auto-contenu (Airflow DB + Fraud DB + API)
+#
+# Le DAG 3.3 (fraud_detection_train_model) exécute prepare_dataset.py/train.py en
+# subprocess directement dans ce conteneur (specs.md Phase 4 : "pas de déport
+# Docker dans un conteneur Docker car trop complexe") — image custom construite
+# par airflow/Dockerfile (ajoute libgomp1 + les deps ML de src/requirements.txt
+# à l'image officielle apache/airflow).
+#
+# Usage : ./start.sh | ./stop.sh
+# Logs Airflow : airflow/logs/
+# Transactions stockées : work/<YYYYMMDD>/
+
+x-airflow-common:
+  &airflow-common
+  image: fraud-detection-airflow:latest
+  build:
+    context: ..
+    dockerfile: airflow/Dockerfile
+  environment:
+    &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__CORE__AUTH_MANAGER: airflow.providers.fab.auth_manager.fab_auth_manager.FabAuthManager
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-db/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    # Doit être identique sur tous les conteneurs Airflow : signe les JWT échangés entre
+    # le scheduler (émetteur, côté tâche) et l'apiserver (vérificateur, execution API).
+    # Laissé vide/non défini, chaque conteneur génère sa propre clé aléatoire -> "Invalid
+    # auth token: Signature verification failed" sur toutes les tâches (LocalExecutor).
+    AIRFLOW__API_AUTH__JWT_SECRET: "fraud-detection-dev-secret-key-change-in-prod"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    # Variables métier lues par config.py des DAGs
+    # APP_ENV/DATABASE_URL sont calculées par start.sh avant le `docker compose up` :
+    # en mode prod (APP_ENV=prod), DATABASE_URL pointe vers Neon (DATABASE_URL_PROD, .env
+    # racine) au lieu du fraud-db local — utilisé par les DAGs 3.1 (realtime) et 3.2 (daily_report).
+    APP_ENV: "${APP_ENV:-test}"
+    FRAUD_API_URL: "http://fraud-detection-api:8000"
+    FRAUD_THRESHOLD: "0.7"
+    DATABASE_URL: "${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
+    # store_trx.py (APP_ENV=prod) uploade vers S3 au lieu du fichier local — vides en mode test
+    AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+    AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+    AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-west-3}"
+    WORK_DIR: "/opt/airflow/work"
+    REPORT_LOOKBACK_HOURS: "24"
+    # Alerte fraude (send_fraud_alert_email) + rapport quotidien (gen_daily_report) —
+    # indépendant de APP_ENV, propagé dans les deux modes (test/prod)
+    SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
+    SMTP_PORT: "${SMTP_PORT:-587}"
+    SMTP_USER: "${SMTP_USER:-}"
+    SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+    FRAUD_ALERT_EMAIL: "${FRAUD_ALERT_EMAIL:-}"
+    REPORT_EMAIL: "${REPORT_EMAIL:-}"
+    # Secret partagé avec fraud-detection-api (POST /reload-model) — même valeur des 2 côtés
+    MODEL_RELOAD_TOKEN: "${MODEL_RELOAD_TOKEN:-}"
+    # DAG 3.3 (entraînement) — vérification du changement de données + subprocess
+    DATA_PATH: "/opt/airflow/data/fraudTest.csv"
+    TRAIN_SCHEDULE_MINUTES: "60"
+    SRC_DIR: "/opt/airflow/src"
+    PROJECT_CONFIG_PATH: "/opt/airflow/project_config/models.yaml"
+  volumes:
+    - ../dags:/opt/airflow/dags
+    - ../work:/opt/airflow/work
+    - ../data:/opt/airflow/data:ro
+    - ../src:/opt/airflow/src:ro
+    - ../config:/opt/airflow/project_config:ro
+    # DAG 3.3 (train.py --env test) sauvegarde ici (MODEL_DIR = Path("model"), cwd /opt/airflow) —
+    # doit être le même répertoire que celui monté par fraud-detection-api (../model:/app/model:ro,
+    # cf. docker-compose.yml), sinon le modèle entraîné n'atteint jamais l'API (bug trouvé et
+    # corrigé le 2026-07-06 : le volume manquait, tous les entraînements de test écrivaient dans
+    # un /opt/airflow/model éphémère, propre au conteneur scheduler, jamais partagé)
+    - ../model:/opt/airflow/model
+    - ./logs:/opt/airflow/logs
+    - ./config:/opt/airflow/config
+    - ./plugins:/opt/airflow/plugins
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    &airflow-common-depends-on
+    airflow-db:
+      condition: service_healthy
+
+services:
+
+  # ── Bases de données ──────────────────────────────────────────────────────────
+
+  airflow-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  fraud-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: fraud
+      POSTGRES_PASSWORD: fraud
+      POSTGRES_DB: fraud
+    volumes:
+      - fraud-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "fraud"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    restart: always
+
+  # ── API de prédiction ─────────────────────────────────────────────────────────
+
+  fraud-detection-api:
+    build:
+      context: ..
+      dockerfile: api/Dockerfile
+    container_name: fraud_detection_api_cicd
+    environment:
+      MODEL_ENV: "test"
+      MODEL_PATH: "model/best_model.pkl"
+      CLIENT_STATS_PATH: "work/client_trx_analysis.csv"
+      # Secret partagé avec le DAG 3.3 (POST /reload-model) — même valeur des 2 côtés
+      MODEL_RELOAD_TOKEN: "${MODEL_RELOAD_TOKEN:-}"
+    volumes:
+      - ../model:/app/model:ro
+      - ../work:/app/work:ro
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+
+  # ── Dashboard de suivi (specs.md Phase 6) ─────────────────────────────────────
+  # Déploiement test uniquement (Docker) — pas de déploiement Streamlit Cloud (prod, plus tard).
+  # Rejoint fraud-db et fraud-detection-api via le réseau Docker interne (pas de port exposé
+  # pour ces deux-là), comme fraud-detection-api déjà co-localisé ici pour la même raison.
+
+  dashboard:
+    build:
+      context: ..
+      dockerfile: dashboard/Dockerfile
+    container_name: fraud_dashboard_test
+    environment:
+      DATABASE_URL:  "${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
+      FRAUD_API_URL: "http://fraud-detection-api:8000"
+    ports:
+      - "8501:8501"
+    depends_on:
+      fraud-db:
+        condition: service_healthy
+    restart: always
+
+  # ── Airflow ───────────────────────────────────────────────────────────────────
+
+  airflow-apiserver:
+    <<: *airflow-common
+    command: api-server
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    # LocalExecutor exécute les tâches (dont le DAG 3.3, prepare/train en
+    # subprocess) directement dans ce conteneur.
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    command: dag-processor
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type DagProcessorJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-triggerer:
+    <<: *airflow-common
+    command: triggerer
+    healthcheck:
+      test: ["CMD-SHELL", 'airflow jobs check --job-type TriggererJob --hostname "$${HOSTNAME}"']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username airflow \
+          --password airflow \
+          --firstname Fraud \
+          --lastname Detection \
+          --role Admin \
+          --email admin@fraud-detection.local || true
+        echo "Init terminé."
+    environment:
+      <<: *airflow-common-env
+      _AIRFLOW_DB_MIGRATE: 'true'
+      # entrypoint: /bin/bash court-circuite le /entrypoint officiel de l'image, qui est ce
+      # qui configure normalement PYTHONPATH pour le pip install --user d'Airflow. Sans HOME
+      # forcé ici, `airflow` plante en ModuleNotFoundError une fois user: "0:0" appliqué
+      # (HOME devient /root, hors de portée du site-packages --user d'airflow).
+      HOME: /home/airflow
+    user: "0:0"
+    restart: "no"
+
+volumes:
+  airflow-db-volume:
+  fraud-db-volume:

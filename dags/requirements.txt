@@ -1,0 +1,8 @@
+# Dépendances supplémentaires installées dans l'image Airflow (cf. airflow/Dockerfile).
+# DAG 3.3 (fraud_detection_train_model) : prepare_dataset.py/train.py tournent en
+# subprocess dans ce même conteneur (specs.md Phase 4 : pas de conteneur Docker
+# séparé) — les deps ML (pandas/scikit-learn/xgboost/lightgbm/mlflow/...) sont
+# dans src/requirements.txt, installées en plus de celles-ci par airflow/Dockerfile.
+requests
+psycopg2-binary
+boto3
