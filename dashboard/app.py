@@ -5,6 +5,7 @@ Affiche les transactions temps réel stockées par le DAG ETL & Fraud Detection
 (table `real_time_transactions`), avec code couleur par score de fraude et
 filtres (jour, niveau de fraude). Affiche aussi l'état de l'API/modèle via /health.
 """
+import math
 import os
 from datetime import date
 
@@ -40,17 +41,37 @@ def _color_for_score(score: float) -> str:
     return "#2ecc71"       # vert
 
 
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Même formule que src/prepare_dataset.py (repli sans geopy, pas une dépendance du
+    dashboard) — précision suffisante pour un affichage de suivi."""
+    R = 6371.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlam = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(max(0.0, min(1.0, a))))
+
+
 @st.cache_data(ttl=10)
 def load_transactions(day: date) -> pd.DataFrame:
+    # NB : diff_avg_amt n'est pas affichable ici — calculée par l'API à l'inférence (via
+    # work/client_trx_analysis.csv, cf. CLAUDE.md), jamais renvoyée par /predict ni persistée
+    # dans real_time_transactions ; le dashboard n'a pas accès à ce fichier. distance_km, en
+    # revanche, se recalcule directement à partir de lat/long/merch_lat/merch_long, déjà en base.
     query = """
         SELECT trans_num, stored_at, merchant, category, amt, state,
+               lat, long_, merch_lat, merch_long,
                is_fraud_predicted, fraud_score
         FROM real_time_transactions
         WHERE stored_at::date = %s
         ORDER BY stored_at DESC
     """
     with psycopg2.connect(DATABASE_URL) as conn:
-        return pd.read_sql(query, conn, params=(day,))
+        df = pd.read_sql(query, conn, params=(day,))
+    df["distance_km"] = df.apply(
+        lambda r: _haversine_km(r["lat"], r["long_"], r["merch_lat"], r["merch_long"]), axis=1,
+    )
+    return df
 
 
 def load_api_health() -> dict | None:
@@ -104,15 +125,18 @@ else:
 
     st.caption(f"{len(df)} transaction(s) — {selected_day.strftime('%Y-%m-%d')}, la plus récente en premier")
 
-    display_df = df.copy()
-    display_df["stored_at"]   = display_df["stored_at"].dt.strftime("%H:%M:%S")
-    display_df["fraud_score"] = display_df["fraud_score"].map(lambda s: f"{s:.2%}" if pd.notna(s) else "—")
+    display_df = df.drop(columns=["lat", "long_", "merch_lat", "merch_long"]).copy()
+    display_df["stored_at"]    = display_df["stored_at"].dt.strftime("%H:%M:%S")
+    display_df["amt"]          = display_df["amt"].map(lambda a: f"{a:.2f}" if pd.notna(a) else "—")
+    display_df["distance_km"]  = display_df["distance_km"].map(lambda d: f"{d:.2f}" if pd.notna(d) else "—")
+    display_df["fraud_score"]  = display_df["fraud_score"].map(lambda s: f"{s:.2%}" if pd.notna(s) else "—")
     display_df = display_df.rename(columns={
         "trans_num":          "Transaction",
         "stored_at":          "Heure",
         "merchant":           "Marchand",
         "category":           "Catégorie",
         "amt":                "Montant ($)",
+        "distance_km":        "Distance (km)",
         "state":              "État",
         "is_fraud_predicted": "Fraude ?",
         "fraud_score":        "Score",
