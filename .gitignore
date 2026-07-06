@@ -37,9 +37,6 @@ api/.env
 # Airflow
 airflow/logs/
 
-# CatBoost (généré par erreur si catboost est réinstallé/relancé)
-catboost_info/
-
 # Claude Code (config/état local de session, pas du contenu projet)
 .claude/
 
