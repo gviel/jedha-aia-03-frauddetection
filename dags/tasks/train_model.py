@@ -6,7 +6,7 @@ import requests
 
 from config import (
     APP_ENV, DATA_PATH, FRAUD_API_URL, MLFLOW_URI, MODEL_NAME, MODEL_RELOAD_TOKEN,
-    PROJECT_CONFIG_PATH, SRC_DIR, WORK_DIR,
+    PROJECT_CONFIG_PATH, S3_BUCKET, SRC_DIR, WORK_DIR,
 )
 
 WORK_RAW_CSV      = WORK_DIR / "fraudTest.csv"
@@ -57,6 +57,18 @@ def prepare(**context):
         "--client-stats", str(CLIENT_STATS_CSV),
     ]
     subprocess.run(cmd, check=True)
+    # work/fraudTest.csv est synchronisé à chaque collecte de transaction, pas ici — cf.
+    # dags/tasks/augment_training_data.py (DAG 3.1). client_trx_analysis.csv, lui, est synchronisé
+    # après train() ci-dessous (une fois l'entraînement réellement terminé, pas juste préparé).
+
+
+def _upload_to_s3(local_path: Path, key: str):
+    try:
+        import boto3
+        boto3.client("s3").upload_file(str(local_path), S3_BUCKET, key)
+        print(f"[train_model] Uploadé vers s3://{S3_BUCKET}/{key}")
+    except Exception as exc:
+        print(f"[train_model] WARN upload S3 {key} : {exc}")
 
 
 def train(**context):
@@ -72,6 +84,14 @@ def train(**context):
         "--env", APP_ENV,
     ]
     subprocess.run(cmd, check=True)
+
+    if APP_ENV == "prod":
+        # Synchronisé après train() (pas prepare()) : reflète les stats client utilisées par CE
+        # cycle d'entraînement, une fois qu'il a réellement abouti — requis par l'API (Render, pas
+        # d'accès au disque local) pour la feature diff_avg_amt. Indépendant du résultat de
+        # _new_model_is_global_best() ci-dessous (les stats client ne sont pas liées à un run
+        # précis).
+        _upload_to_s3(CLIENT_STATS_CSV, "work/client_trx_analysis.csv")
 
     if _new_model_is_global_best():
         _trigger_api_reload()

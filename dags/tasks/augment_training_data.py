@@ -4,7 +4,7 @@ import random
 import uuid
 from datetime import datetime, timezone
 
-from config import WORK_DIR
+from config import APP_ENV, S3_BUCKET, WORK_DIR
 
 WORK_RAW_CSV = WORK_DIR / "fraudTest.csv"
 
@@ -70,3 +70,16 @@ def augment_training_data(**context):
 
     print(f"[augment_training_data] Transaction synthétique {new_trans_num} ajoutée à "
           f"{WORK_RAW_CSV} (is_fraud={trx['is_fraud']})")
+
+    if APP_ENV == "prod":
+        # work/fraudTest.csv reste la copie de travail LOCALE en permanence (lue/écrite par cette
+        # task à chaque collecte de transaction) — mais synchronisée sur S3 ici, à la fin de la
+        # collecte+prédiction (dernière étape du DAG ETL & Fraud Detection à modifier ce fichier),
+        # pour que le DAG Model Training (3.3) voie un snapshot à jour, pas seulement au moment de
+        # son propre cycle d'entraînement (cf. specs.md §3.1/§3.3).
+        try:
+            import boto3
+            boto3.client("s3").upload_file(str(WORK_RAW_CSV), S3_BUCKET, "work/fraudTest.csv")
+            print(f"[augment_training_data] Snapshot work/fraudTest.csv synchronisé sur S3")
+        except Exception as exc:
+            print(f"[augment_training_data] WARN sync S3 work/fraudTest.csv : {exc}")
