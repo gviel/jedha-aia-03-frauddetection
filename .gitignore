@@ -1,0 +1,45 @@
+# Données volumineuses
+data/fraudTest.csv
+data/fraudTest.ods
+
+# Fichiers générés (préparation + modèles)
+work/
+model/
+other_projects/
+
+# Environnements virtuels
+.venv/
+.venv-api/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+build/
+
+# Environnement
+.env
+api/.env
+
+# MCP (contient des credentials en clair — cf. .mcp.json.template)
+.mcp.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Airflow
+airflow/logs/
+
+# CatBoost (généré par erreur si catboost est réinstallé/relancé)
+catboost_info/
+
+# Claude Code (config/état local de session, pas du contenu projet)
+.claude/
+
+# Tests
+.pytest_cache/
