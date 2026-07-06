@@ -66,23 +66,25 @@ def _build_features(trx: dict, client_avg_amt: dict, client_avg_amt_fallback: fl
 
     avg_mnt = client_avg_amt.get(_client_id(trx), client_avg_amt_fallback)
 
+    # trx.get(key, default) ne suffit pas : Transaction.model_dump() inclut toujours toutes
+    # les clés Optional avec la valeur None (pas absentes) — d'où (trx.get(key) or default).
     return pd.DataFrame([{
         "amt":          trx["amt"],
-        "zip":          trx.get("zip", 0),
+        "zip":          trx.get("zip") or 0,
         "lat":          trx["lat"],
         "long":         trx["long"],
-        "city_pop":     trx.get("city_pop", 0),
+        "city_pop":     trx.get("city_pop") or 0,
         "merch_lat":    trx["merch_lat"],
         "merch_long":   trx["merch_long"],
         "distance_km":  _haversine_km(trx["lat"], trx["long"], trx["merch_lat"], trx["merch_long"]),
         "diff_avg_amt": trx["amt"] - avg_mnt,
         "hour":         int(dt.hour),
         "dow":          int(dt.dayofweek),
-        "gender":       str(trx.get("gender", "")),
-        "state":        str(trx.get("state", "")),
-        "category":     str(trx.get("category", "")),
-        "merchant":     str(trx.get("merchant", "")),
-        "job":          str(trx.get("job", "")),
+        "gender":       str(trx.get("gender") or ""),
+        "state":        str(trx.get("state") or ""),
+        "category":     str(trx.get("category") or ""),
+        "merchant":     str(trx.get("merchant") or ""),
+        "job":          str(trx.get("job") or ""),
     }])
 
 
