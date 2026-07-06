@@ -73,7 +73,9 @@ Agent CodeWriter #1
 Agent CodeWriter #1
 
 - input :  @work/fraudTest_prepared.csv
-- output : modèle sous forme pkl en local ou dans S3 de MLFlow
+- output : 
+    - en test : modèle sous forme pkl en local + base SQLite locale MLFlow
+    - en prod : modèle dans S3 de MLFlow + MLFLow v3.7.0 déployé sur HuggingFace
 
 ce script doit pouvoir
 - accepter une config yaml qui indique
@@ -95,12 +97,10 @@ ce script doit pouvoir
     - logger les scores dans MLFlow v3.7.0 https://gviel-mlflow37.hf.space/#/ (prod uniquement —
       cf. note ci-dessous)
 - tagger les modèles avec des tags { env=prod|test, status=best|challenger|worst}; le meilleur sera taggé avec status=best, le pire avec status=worst et les autres en status=challenger
-    - en prod : pousser le modèle vers le bucket S3 de MLFlow
+    - en prod : pousser le modèle vers le bucket S3 de MLFlow de prod
     - en test : sauver le modèle en local dans un répertoire model au format pkl, ET basculer
-      automatiquement le tracking MLFlow sur un store **SQLite local** (`work/mlflow_local.db`,
-      jamais poussé nulle part) au lieu de l'expérience hébergée `https://gviel-mlflow37.hf.space/`
-      partagée avec la prod — permet de s'entraîner/itérer en local (`make train ARGS="--env
-      test"`) sans dépendre du réseau/des credentials du serveur MLFlow hébergé, et sans y
+      automatiquement le tracking MLFlow sur un store **SQLite local** (`work/mlflow_local.db`, jamais poussé nulle part) au lieu du serveur MLFLow hébergée `https://gviel-mlflow37.hf.space/`
+      partagée avec la prod — permet de s'entraîner/itérer en local (`make train ARGS="--env test"`) sans dépendre du réseau/des credentials du serveur MLFlow hébergé, et sans y
       accumuler de bruit : ces runs ne sont de toute façon jamais servis (pas de modèle poussé sur
       S3), les logguer dans l'historique partagé ne ferait qu'y ajouter du bruit de dev/itération
       et risquerait qu'un run de test pollue la sélection "meilleur modèle" utilisée par l'API en
@@ -121,6 +121,8 @@ Rappel de ce qui est fait pas la lib imblearn.over_sampling.SMOTE (à faire touj
 ## Phase 2 : Création de l'API de prédiction de fraude
 
 Agent CodeWriter #2
+
+**Déployée en prod (Render, 2026-07-06)** : `https://jedha-aia-03-frauddetection.onrender.com`
 
 Ce que doit faire notre API (FastAPI)
 - doit récupérer avec MLFlow client le meilleur modèle taggé avec status=best
@@ -291,7 +293,7 @@ Objectif: déployer et exécuter de façon ponctuelle l'entrainement de plusieur
 
 Agent : Devops engineer #1 & QA Tester #1
 
-- serveur MLFlow v3.7.0 est déjà déployé sur Hugging Face pour tous les environnements
+- serveur MLFlow en local avec SQLite et fichier modèle local *.pkl
 
 ### 4.1 - tests unitaires
 
@@ -323,7 +325,13 @@ Répertoire @work est le répertoire de travail pour stocker et manipuler des fi
 
 Agent : Devops engineer #1
 
-- serveur MLFlow v3.7.0 est déjà déployé sur Hugging Face pour tous les environnements
+**Stack prod déployée (2026-07-06)** :
+- serveur MLFlow v3.7.0 (Hugging Face) : `https://gviel-mlflow37.hf.space/`
+- API fraud detection (Render) : `https://jedha-aia-03-frauddetection.onrender.com`
+- Dashboard de suivi (Streamlit Community Cloud, phase 6) :
+  `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
+- BDD PgSQL (Neon, projet `fraud-detection-db`) : chaîne de connexion dans `DATABASE_URL_PROD`
+  (`.env.production`, non commité)
 
 Définition de la stack à déployer :
     - API fraud detection sur Render
@@ -381,5 +389,6 @@ Définition de la stack à déployer :
 ### 6.2 - Déploiement du dashboard
 
 - en test : dans un docker
-- en prod : sur streamlit
+- en prod : sur streamlit — **déployé (2026-07-06)** :
+  `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
 
