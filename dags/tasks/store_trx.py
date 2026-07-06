@@ -51,8 +51,15 @@ def store_trx(**context):
                     state              TEXT,
                     is_fraud_predicted BOOLEAN,
                     fraud_score        DOUBLE PRECISION,
+                    diff_avg_amt       DOUBLE PRECISION,
                     raw_data           JSONB
                 )
+            """)
+            # CREATE TABLE IF NOT EXISTS ne modifie pas une table déjà existante (cf. Neon prod,
+            # fraud-db local déjà initialisée avant cette colonne) — ALTER TABLE explicite requis.
+            cur.execute("""
+                ALTER TABLE real_time_transactions
+                ADD COLUMN IF NOT EXISTS diff_avg_amt DOUBLE PRECISION
             """)
             cur.execute("""
                 INSERT INTO real_time_transactions

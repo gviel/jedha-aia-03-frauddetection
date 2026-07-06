@@ -56,7 +56,11 @@ class Transaction(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    trans_num:   str
-    is_fraud:    bool
-    fraud_score: float = Field(..., description="Score de fraude [0, 1]")
-    threshold:   float = Field(0.5, description="Seuil de décision")
+    trans_num:     str
+    is_fraud:      bool
+    fraud_score:   float = Field(..., description="Score de fraude [0, 1]")
+    threshold:     float = Field(0.5, description="Seuil de décision")
+    diff_avg_amt:  float = Field(..., description=(
+        "Feature utilisée par le modèle : montant de la transaction moins le montant moyen "
+        "historique du client (cf. CLAUDE.md) — exposée pour le dashboard de suivi (Phase 6)"
+    ))

@@ -54,13 +54,12 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 @st.cache_data(ttl=10)
 def load_transactions(day: date) -> pd.DataFrame:
-    # NB : diff_avg_amt n'est pas affichable ici — calculée par l'API à l'inférence (via
-    # work/client_trx_analysis.csv, cf. CLAUDE.md), jamais renvoyée par /predict ni persistée
-    # dans real_time_transactions ; le dashboard n'a pas accès à ce fichier. distance_km, en
-    # revanche, se recalcule directement à partir de lat/long/merch_lat/merch_long, déjà en base.
+    # diff_avg_amt est calculée par l'API à l'inférence (cf. api/app.py:_build_features) et
+    # renvoyée par /predict (dags/tasks/fraud_detect.py la persiste ici) — NULL pour les
+    # transactions collectées avant ce changement.
     query = """
         SELECT trans_num, stored_at, merchant, category, amt, state,
-               lat, long_, merch_lat, merch_long,
+               lat, long_, merch_lat, merch_long, diff_avg_amt,
                is_fraud_predicted, fraud_score
         FROM real_time_transactions
         WHERE stored_at::date = %s
@@ -126,21 +125,27 @@ else:
     st.caption(f"{len(df)} transaction(s) — {selected_day.strftime('%Y-%m-%d')}, la plus récente en premier")
 
     display_df = df.drop(columns=["lat", "long_", "merch_lat", "merch_long"]).copy()
-    display_df["stored_at"]    = display_df["stored_at"].dt.strftime("%H:%M:%S")
-    display_df["amt"]          = display_df["amt"].map(lambda a: f"{a:.2f}" if pd.notna(a) else "—")
-    display_df["distance_km"]  = display_df["distance_km"].map(lambda d: f"{d:.2f}" if pd.notna(d) else "—")
-    display_df["fraud_score"]  = display_df["fraud_score"].map(lambda s: f"{s:.2%}" if pd.notna(s) else "—")
+    display_df["stored_at"]     = display_df["stored_at"].dt.strftime("%H:%M:%S")
+    display_df["amt"]           = display_df["amt"].map(lambda a: f"{a:.2f}" if pd.notna(a) else "—")
+    display_df["distance_km"]   = display_df["distance_km"].map(lambda d: f"{d:.2f}" if pd.notna(d) else "—")
+    display_df["diff_avg_amt"]  = display_df["diff_avg_amt"].map(lambda d: f"{d:.2f}" if pd.notna(d) else "—")
+    display_df["fraud_score"]   = display_df["fraud_score"].map(lambda s: f"{s:.2%}" if pd.notna(s) else "—")
     display_df = display_df.rename(columns={
         "trans_num":          "Transaction",
         "stored_at":          "Heure",
         "merchant":           "Marchand",
         "category":           "Catégorie",
         "amt":                "Montant ($)",
-        "distance_km":        "Distance (km)",
         "state":              "État",
+        "distance_km":        "Distance (km)",
+        "diff_avg_amt":       "Écart moy. client ($)",
         "is_fraud_predicted": "Fraude ?",
         "fraud_score":        "Score",
     })
+    display_df = display_df[[
+        "Transaction", "Heure", "Marchand", "Catégorie", "Montant ($)", "État",
+        "Distance (km)", "Écart moy. client ($)", "Fraude ?", "Score",
+    ]]
 
     def _row_style(row):
         score = df.loc[row.name, "fraud_score"]

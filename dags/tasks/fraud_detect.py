@@ -13,10 +13,11 @@ def fraud_detect(**context):
 
     resp = requests.post(f"{FRAUD_API_URL}/predict", json=trx, timeout=15)
     resp.raise_for_status()
-    prediction  = resp.json()
-    fraud_score = float(prediction.get("fraud_score", 0.0))
-    is_fraud    = bool(prediction.get("is_fraud", False))
-    trans_num   = trx["trans_num"]
+    prediction   = resp.json()
+    fraud_score  = float(prediction.get("fraud_score", 0.0))
+    is_fraud     = bool(prediction.get("is_fraud", False))
+    diff_avg_amt = prediction.get("diff_avg_amt")
+    trans_num    = trx["trans_num"]
 
     print(f"[fraud_detect] {trans_num} → score={fraud_score:.4f}  is_fraud={is_fraud}")
 
@@ -26,9 +27,9 @@ def fraud_detect(**context):
         with conn.cursor() as cur:
             cur.execute("""
                 UPDATE real_time_transactions
-                   SET is_fraud_predicted=%s, fraud_score=%s
+                   SET is_fraud_predicted=%s, fraud_score=%s, diff_avg_amt=%s
                  WHERE trans_num=%s
-            """, (is_fraud, fraud_score, trans_num))
+            """, (is_fraud, fraud_score, diff_avg_amt, trans_num))
         conn.commit()
         conn.close()
     except Exception as exc:

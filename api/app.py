@@ -266,6 +266,7 @@ def predict(trx: Transaction):
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
     df = _build_features(trx.model_dump(), _state["client_avg_amt"], _state["client_avg_amt_fallback"])
+    diff_avg_amt = float(df["diff_avg_amt"].iloc[0])
     df = _apply_encoders(df, _state["encoders"])
 
     available_features = [f for f in _state["features"] if f in df.columns]
@@ -286,4 +287,5 @@ def predict(trx: Transaction):
         is_fraud=score >= threshold,
         fraud_score=round(score, 6),
         threshold=threshold,
+        diff_avg_amt=round(diff_avg_amt, 2),
     )
