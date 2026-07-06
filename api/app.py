@@ -61,7 +61,7 @@ def _client_id(trx: dict) -> str:
 
 
 def _build_features(trx: dict, client_avg_amt: dict, client_avg_amt_fallback: float) -> pd.DataFrame:
-    ts_ms = trx.get("current_time") or (trx.get("unix_time", 0) * 1000)
+    ts_ms = trx.get("current_time") or ((trx.get("unix_time") or 0) * 1000)
     dt = pd.to_datetime(ts_ms / 1000, unit="s", utc=True)
 
     avg_mnt = client_avg_amt.get(_client_id(trx), client_avg_amt_fallback)
