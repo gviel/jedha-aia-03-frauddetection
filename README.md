@@ -60,7 +60,7 @@ make test                                  # tests unitaires (src/)
 
 Stack complète en local (API + PostgreSQL) :
 ```bash
-docker compose --env-file .env.test up --build
+docker compose --env-file api/.env.test up --build
 ```
 
 Stack Airflow (DAGs 3.1/3.2/3.3) :
@@ -69,8 +69,9 @@ Stack Airflow (DAGs 3.1/3.2/3.3) :
 APP_ENV=prod ./airflow/start.sh  # simulation locale du mode prod (Neon + S3)
 ```
 
-Copier `.env.template` en `.env.test` (et `.env.production` pour les variables prod-only) avant
-de lancer quoi que ce soit — voir les commentaires du template pour le détail de chaque variable.
+Chaque application a son propre fichier d'environnement à copier avant de démarrer —
+`api/.env.template`, `airflow/.env.template`, `dashboard/.env.template` (voir les commentaires de
+chacun pour le détail des variables).
 
 ## Structure du dépôt
 

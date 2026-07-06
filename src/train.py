@@ -49,8 +49,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 
-load_dotenv(".env.test")
-load_dotenv(".env.production")  # additif (DATABASE_URL_PROD, AWS_*) — n'écrase pas .env.test
+# Un seul fichier choisi entièrement selon APP_ENV, mêmes fichiers que la stack Airflow qui
+# orchestre ce script (subprocess du DAG 3.3) — cf. airflow/.env.template. Sans effet en
+# conteneur : les variables y sont déjà dans l'environnement du process (start.sh), load_dotenv
+# ne les écrase jamais.
+load_dotenv("airflow/.env.production" if os.getenv("APP_ENV", "test") == "prod"
+            else "airflow/.env.test")
 warnings.filterwarnings("ignore")
 
 # ── Constantes ────────────────────────────────────────────────────────────────

@@ -330,8 +330,8 @@ Agent : Devops engineer #1
 - API fraud detection (Render) : `https://jedha-aia-03-frauddetection.onrender.com`
 - Dashboard de suivi (Streamlit Community Cloud, phase 6) :
   `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
-- BDD PgSQL (Neon, projet `fraud-detection-db`) : chaîne de connexion dans `DATABASE_URL_PROD`
-  (`.env.production`, non commité)
+- BDD PgSQL (Neon, projet `fraud-detection-db`) : chaîne de connexion dans `DATABASE_URL`
+  (`airflow/.env.production`/`dashboard/.env.production`, non commités)
 
 Définition de la stack à déployer :
     - API fraud detection sur Render
@@ -391,4 +391,25 @@ Définition de la stack à déployer :
 - en test : dans un docker
 - en prod : sur streamlit — **déployé (2026-07-06)** :
   `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
+
+---
+
+## Génération des schémas d'architecture (draw.io)
+
+Schémas dans `docs/*.drawio` (format `mxfile`/`app.diagrams.net`, éditables dans draw.io/diagrams.net).
+Conventions de couleur reprises entre schémas : bleu `#dae8fc`/`#6c8ebf` pour les systèmes externes et
+le stockage (cloud, cylindre) ; vert `#d5e8d4`/`#82b366` pour les services applicatifs cœur (API,
+registre de modèles) ; jaune `#fff2cc`/`#d6b656` pour Airflow ; violet `#e1d5e7`/`#9673a6` pour le
+monitoring/dashboard.
+
+Pour un schéma d'**architecture prod** (Phase 5 + Phase 6, cf. `docs/architecture_prod.drawio`) :
+- ne pas détailler les conteneurs internes d'Airflow (pas de `airflow-scheduler`,
+  `airflow-apiserver`, `airflow-db`, etc.) — un seul bloc "Airflow" représentant l'orchestrateur,
+  avec la liste des DAGs en texte à l'intérieur du bloc
+- ne pas représenter les éléments de tests unitaires/intégration (Phase 4) ni les stacks Docker de
+  test (conteneurs `_test`/`_cicd`, bases PgSQL locales) — uniquement les services/ressources
+  réellement déployés en prod
+- privilégier une mise en page **paysage** (largeur nettement supérieure à la hauteur, ex.
+  `pageWidth`/`pageHeight` ~1754×900) plutôt qu'empilée verticalement, pour une insertion directe
+  dans une page de présentation (slide) sans redimensionnement
 

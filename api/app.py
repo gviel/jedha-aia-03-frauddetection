@@ -25,8 +25,11 @@ from fastapi import FastAPI, HTTPException, status
 
 from schemas import Transaction, PredictionResponse
 
-load_dotenv(".env.test")
-load_dotenv(".env.production")  # additif (DATABASE_URL_PROD, AWS_*) — n'écrase pas .env.test
+# Un seul fichier choisi entièrement selon MODEL_ENV (propre toggle de l'API, pas APP_ENV qui ne
+# la concerne pas) — cf. api/.env.template. Sans effet en conteneur (Render, Docker) : les
+# variables y sont déjà dans l'environnement du process, load_dotenv ne les écrase jamais.
+load_dotenv("api/.env.production" if os.getenv("MODEL_ENV", "test") in ("prod", "staging")
+            else "api/.env.test")
 
 MODEL_ENV        = os.getenv("MODEL_ENV", "test")
 MLFLOW_URI       = os.getenv("MLFLOW_URI", "https://gviel-mlflow37.hf.space/")

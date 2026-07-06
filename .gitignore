@@ -19,11 +19,16 @@ __pycache__/
 dist/
 build/
 
-# Environnement (.env.template est commité, sert de doc pour .env.test/.env.production)
+# Environnement — un fichier .env.test/.env.production par application (api/, airflow/,
+# dashboard/), chaque *.env.template correspondant reste commité
 .env
-.env.test
-.env.production
 api/.env
+api/.env.test
+api/.env.production
+airflow/.env.test
+airflow/.env.production
+dashboard/.env.test
+dashboard/.env.production
 
 # MCP (contient des credentials en clair — cf. .mcp.json.template)
 .mcp.json
@@ -42,9 +47,6 @@ airflow/logs/
 
 # Tests
 .pytest_cache/
-
-# Vidéo de démo (828 Mo — dépasse la limite GitHub de 100 Mo/fichier sans Git LFS)
-docs/enonce/*.mov
 
 # Notes de travail personnelles (pas un livrable du projet)
 docs/travail/

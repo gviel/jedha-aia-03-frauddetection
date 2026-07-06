@@ -13,44 +13,34 @@ fi
 
 export AIRFLOW_UID=$(id -u)
 
-# .env.test (commun) + .env.production (additif, prod seulement) — cf. .env.template à la
-# racine pour la doc complète. On ne source pas les fichiers entiers (écraserait des vars déjà
-# exportées) : lecture ciblée var par var, uniquement si pas déjà présente dans l'environnement.
-if [ -z "${DATABASE_URL_PROD:-}" ] && [ -f ../.env.production ]; then
-    DATABASE_URL_PROD="$(grep -E '^DATABASE_URL_PROD=' ../.env.production | tail -1 | cut -d= -f2-)"
-fi
-
-# Email (alerte fraude + rapport quotidien) + reload modèle (DAG 3.3 -> API /reload-model) —
-# indépendant du mode APP_ENV, lu depuis ../.env.test si pas déjà exporté.
-for _var in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD FRAUD_ALERT_EMAIL REPORT_EMAIL MODEL_RELOAD_TOKEN; do
-    if [ -z "${!_var:-}" ] && [ -f ../.env.test ]; then
-        export "$_var=$(grep -E "^${_var}=" ../.env.test | tail -1 | cut -d= -f2-)"
-    fi
-done
-
+# Un seul fichier .env choisi entièrement selon APP_ENV (airflow/.env.test ou
+# airflow/.env.production — mêmes clés des deux côtés, cf. airflow/.env.template) : pas de
+# fusion entre fichiers, pas de variable au nom différent selon l'environnement. Lecture ligne
+# par ligne via grep/cut (pas de `source` du fichier entier : une valeur contenant un caractère
+# spécial shell, ex. le `&` d'une URL Neon, casserait un `source` direct), uniquement si la
+# variable n'est pas déjà exportée dans l'environnement courant.
 export APP_ENV="${APP_ENV:-test}"
 if [ "$APP_ENV" = "prod" ]; then
-    if [ -z "${DATABASE_URL_PROD:-}" ]; then
-        echo "ERREUR : APP_ENV=prod nécessite DATABASE_URL_PROD (dans ../.env.production ou l'environnement)." >&2
-        exit 1
-    fi
-    export DATABASE_URL="${DATABASE_URL:-$DATABASE_URL_PROD}"
-
-    # store_trx.py bascule aussi sur l'upload S3 (au lieu du fichier local) quand APP_ENV=prod —
-    # il faut donc aussi les credentials AWS dans les conteneurs Airflow (même lecture ciblée
-    # de ../.env.production, sans écraser d'autres vars).
-    for _var in AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION; do
-        if [ -z "${!_var:-}" ] && [ -f ../.env.production ]; then
-            export "$_var=$(grep -E "^${_var}=" ../.env.production | tail -1 | cut -d= -f2-)"
-        fi
-    done
-    if [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; then
-        echo "ERREUR : APP_ENV=prod nécessite AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY (dans ../.env.production ou l'environnement)." >&2
-        exit 1
-    fi
-    export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-eu-west-3}"
+    ENV_FILE=".env.production"
 else
-    export DATABASE_URL="${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
+    ENV_FILE=".env.test"
+fi
+if [ ! -f "$ENV_FILE" ]; then
+    echo "ERREUR : airflow/$ENV_FILE introuvable (copier airflow/.env.template)." >&2
+    exit 1
+fi
+for _var in DATABASE_URL POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB FRAUD_API_URL \
+            FRAUD_THRESHOLD MLFLOW_URI MODEL_NAME MODEL_RELOAD_TOKEN S3_BUCKET \
+            FRAUD_ALERT_EMAIL REPORT_EMAIL SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD \
+            REPORT_LOOKBACK_HOURS WORK_DIR DATA_PATH TRAIN_SCHEDULE_MINUTES SRC_DIR \
+            PROJECT_CONFIG_PATH AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION; do
+    if [ -z "${!_var:-}" ]; then
+        export "$_var=$(grep -E "^${_var}=" "$ENV_FILE" | tail -1 | cut -d= -f2-)"
+    fi
+done
+if [ "$APP_ENV" = "prod" ] && { [ -z "${AWS_ACCESS_KEY_ID:-}" ] || [ -z "${AWS_SECRET_ACCESS_KEY:-}" ]; }; then
+    echo "ERREUR : APP_ENV=prod nécessite AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY dans airflow/$ENV_FILE." >&2
+    exit 1
 fi
 
 echo "=== Fraud Detection — Airflow 3.2.2 ==="

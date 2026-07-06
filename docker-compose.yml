@@ -1,6 +1,7 @@
-# Stack de test locale (fraud_db + fraud_api_test) — variables lues depuis .env.test
+# Stack de test locale (fraud_db + fraud_api_test) — variables lues depuis api/.env.test
 # (docker compose n'auto-charge qu'un fichier nommé exactement `.env`, d'où le flag) :
-#   docker compose --env-file .env.test up --build
+#   docker compose --env-file api/.env.test up --build
+# Pour tester MODEL_ENV=prod localement (lecture MLflow réelle) : --env-file api/.env.production
 services:
 
   db:

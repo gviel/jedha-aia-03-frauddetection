@@ -34,9 +34,10 @@ x-airflow-common:
     AIRFLOW__CORE__EXECUTION_API_SERVER_URL: 'http://airflow-apiserver:8080/execution/'
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
     # Variables métier lues par config.py des DAGs
-    # APP_ENV/DATABASE_URL sont calculées par start.sh avant le `docker compose up` :
-    # en mode prod (APP_ENV=prod), DATABASE_URL pointe vers Neon (DATABASE_URL_PROD, .env
-    # racine) au lieu du fraud-db local — utilisé par les DAGs 3.1 (realtime) et 3.2 (daily_report).
+    # APP_ENV/DATABASE_URL sont exportées par start.sh avant le `docker compose up`, depuis
+    # airflow/.env.test ou airflow/.env.production (choisi entièrement selon APP_ENV, cf.
+    # airflow/.env.template) : en mode prod, DATABASE_URL pointe vers Neon au lieu du fraud-db
+    # local — utilisé par les DAGs 3.1 (realtime) et 3.2 (daily_report).
     APP_ENV: "${APP_ENV:-test}"
     FRAUD_API_URL: "http://fraud-detection-api:8000"
     FRAUD_THRESHOLD: "0.7"
@@ -154,6 +155,8 @@ services:
       dockerfile: dashboard/Dockerfile
     container_name: fraud_dashboard_test
     environment:
+      # Valeurs par défaut alignées sur dashboard/.env.test (cf. dashboard/.env.template) —
+      # DATABASE_URL est déjà exportée par start.sh depuis airflow/.env.${APP_ENV}, partagée ici.
       DATABASE_URL:  "${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
       FRAUD_API_URL: "http://fraud-detection-api:8000"
     ports:
