@@ -1,0 +1,48 @@
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: fraud_db
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-fraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fraud}
+      POSTGRES_DB:       ${POSTGRES_DB:-fraud}
+    ports:
+      - "5432:5432"
+    volumes:
+      - fraud_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-fraud}"]
+      interval: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: fraud_api_test
+    environment:
+      MODEL_ENV:            ${MODEL_ENV:-test}
+      DATABASE_URL:         ${DATABASE_URL:-postgresql://fraud:fraud@db:5432/fraud}
+      MLFLOW_URI:           ${MLFLOW_URI:-https://gviel-mlflow37.hf.space}
+      MODEL_PATH:           /app/model/best_model.pkl
+      CLIENT_STATS_PATH:    /app/work/client_trx_analysis.csv
+      MODEL_RELOAD_TOKEN:   ${MODEL_RELOAD_TOKEN:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./model:/app/model:ro
+      - ./work:/app/work:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  fraud_db_data:

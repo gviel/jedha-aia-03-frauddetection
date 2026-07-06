@@ -43,3 +43,6 @@ catboost_info/
 
 # Tests
 .pytest_cache/
+
+# Vidéo de démo (828 Mo — dépasse la limite GitHub de 100 Mo/fichier sans Git LFS)
+docs/enonce/*.mov

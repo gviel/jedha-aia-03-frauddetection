@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "jedha-julie": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "/data/JEDHA-DL-36/mcp-julie",
+        "mcp-julie"
+      ],
+      "env": {
+        "JEDHA_EMAIL": "<JEDHA_EMAIL>",
+        "JEDHA_PASSWORD": "<JEDHA_PASSWORD>"
+      }
+    },
+    "neon": {
+      "command": "npx",
+      "args": ["-y", "@neondatabase/mcp-server-neon", "start", "<NEON_API_KEY>"]
+    }
+  }
+}
