@@ -24,7 +24,7 @@ Bugs rencontrés + solutions (détail) : `docs/troubleshooting.md`.
 | Variable | Valeurs | Usage |
 |----------|---------|-------|
 | `MODEL_ENV` | `test` \| `prod` \| `staging` | Mode de chargement du modèle |
-| `MLFLOW_URI` | URL | Tracking server MLFlow |
+| `MLFLOW_URI` | URL | Tracking server MLFlow (`api/app.py`, `src/train.py --env prod`, `dags/tasks/train_model.py:_new_model_is_global_best`). Lu uniquement pour un entraînement `--env prod` — `src/train.py --env test` ignore cette variable et pointe toujours vers un store SQLite local `work/mlflow_local.db` (jamais poussé, pour ne pas polluer l'expérience hébergée partagée avec la prod ; cf. specs.md §1.2). Pour la même raison, `dags/tasks/train_model.py::train()` ne compare/relance l'API que si `APP_ENV=="prod"` |
 | `MODEL_STATUS` | `best` | Tag MLFlow à filtrer |
 | `MODEL_NAME` | `fraud_detection` | Nom expérience MLFlow |
 | `MODEL_PATH` | chemin pkl | Modèle local en mode test |

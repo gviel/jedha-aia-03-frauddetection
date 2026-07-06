@@ -93,6 +93,13 @@ def train(**context):
         # précis).
         _upload_to_s3(CLIENT_STATS_CSV, "work/client_trx_analysis.csv")
 
+    if APP_ENV != "prod":
+        # En test, train.py logue dans un store MLFlow SQLite local (work/mlflow_local.db, cf.
+        # src/train.py) — comparer contre l'expérience hébergée ici n'aurait aucun sens (run
+        # absent de ce store).
+        print("[train_model] APP_ENV=test — comparaison meilleur modèle global / reload API ignorés.")
+        return
+
     if _new_model_is_global_best():
         _trigger_api_reload()
     else:

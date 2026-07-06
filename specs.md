@@ -92,10 +92,16 @@ ce script doit pouvoir
     - faire un train/test split selon la config
     - appliquer la technique de rééchantillonage
     - évaluer les scores f1-score, recall, precision, accuracy, ROC-AUC, PR-AUC des modèles
-    - logger les scores dans MLFlow v3.7.0 https://gviel-mlflow37.hf.space/#/
+    - logger les scores dans MLFlow v3.7.0 https://gviel-mlflow37.hf.space/#/ (prod uniquement —
+      cf. note ci-dessous)
 - tagger les modèles avec des tags { env=prod|test, status=best|challenger|worst}; le meilleur sera taggé avec status=best, le pire avec status=worst et les autres en status=challenger
     - en prod : pousser le modèle vers le bucket S3 de MLFlow
-    - en test : sauver le modèle en local dans un répertoire model au format pkl
+    - en test : sauver le modèle en local dans un répertoire model au format pkl, ET logguer
+      params/métriques/tags dans un tracking store MLFlow **local** (SQLite `work/mlflow_local.db`,
+      jamais poussé nulle part) plutôt que dans l'expérience hébergée partagée avec la prod — ces runs ne sont
+      jamais servis (pas de modèle poussé sur S3), les logguer dans l'historique partagé ne ferait
+      qu'accumuler du bruit de dev/itération et risquerait qu'un run de test pollue la sélection
+      "meilleur modèle" utilisée par l'API en prod (cf. piège Render documenté dans CLAUDE.md)
 
 #### Note de rappel sur SMOTE (Synthetic Minority Over-sampling Technique):
 Rappel de ce qui est fait pas la lib imblearn.over_sampling.SMOTE (à faire toujours après le split train/test pas avant!)
