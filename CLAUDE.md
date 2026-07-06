@@ -81,6 +81,20 @@ tout en les laissant sélectionnables. Pas de garde-fou automatique dans le code
 si le schéma de features change, il faut retaguer manuellement (`status=superseded` par ex.) les
 runs `best` devenus incompatibles avec un pr_auc supérieur, sans quoi ils resteront chargés.
 
+**Récidive du même piège (2026-07-06, sans changement de schéma cette fois)** : le DAG 3.3 local
+tournait en continu pendant une session de debug (avant le fix ci-dessus routant `--env test` vers
+un store MLFlow local) — un de ces runs `env=test` (jamais d'artefact S3, cf. `src/train.py`) a
+obtenu un pr_auc (0.8892) supérieur au vrai run prod (`fbbbb945…`, pr_auc=0.8875) et est devenu le
+run `status=best` sélectionné, faisant échouer le chargement du modèle sur Render
+(`model_loaded=false`, `Failed to download artifacts from path 'model'`) et affichant "Statut
+API: error" / "Modèle: ?" sur le dashboard Streamlit. Retagué manuellement en `status=superseded`
+(+ tag `superseded_reason`) pour que la sélection retombe sur le run prod valide, puis
+`POST /reload-model` déclenché sur Render pour forcer le rechargement sans redéploiement complet.
+Confirme que ce piège n'est pas spécifique à un changement de schéma : **tout** run `env=test`
+avec un pr_auc élevé peut temporairement dépasser le vrai meilleur run prod tant qu'il reste tagué
+`status=best` — le fix `--env test` → store local (ci-dessus) empêche que de *nouveaux* runs de ce
+type apparaissent dans l'historique partagé, mais ne nettoie pas les runs déjà présents avant le fix.
+
 ## Entraînement (`config/models.yaml`)
 
 - **4 modèles actifs** : `logistic_regression_balanced`, `xgboost_binary`, `lightgbm_unbalanced`,
