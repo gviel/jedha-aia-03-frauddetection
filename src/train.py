@@ -188,7 +188,14 @@ def train_all(config: dict, X_train, X_test, y_train, y_test,
               encoders: dict, features: list, env: str,
               log: logging.Logger) -> list:
 
-    mlflow.set_tracking_uri(os.getenv("MLFLOW_URI", "https://gviel-mlflow37.hf.space/"))
+    # En test : tracking local (jamais l'expérience hébergée partagée avec la prod), puisque ces
+    # runs ne sont jamais servis (pas de log_model/log_artifact ci-dessous) — évite d'accumuler
+    # des runs de dev/itération dans l'historique MLFlow partagé (cf. CLAUDE.md). Store SQLite
+    # (pas le store fichier "work/mlruns" : mlflow le déprécie au profit d'un backend base de
+    # données, cf. FutureWarning de mlflow.tracking._tracking_service.utils).
+    tracking_uri = (os.getenv("MLFLOW_URI", "https://gviel-mlflow37.hf.space/") if env == "prod"
+                    else "sqlite:///work/mlflow_local.db")
+    mlflow.set_tracking_uri(tracking_uri)
     mlflow.set_experiment(config.get("experiment_name", "fraud_detection"))
     log.info("MLFlow tracking URI : %s", mlflow.get_tracking_uri())
 
