@@ -119,7 +119,7 @@ Ce que doit faire notre API (FastAPI)
 - doit charger le fichier client_trx_analysis.csv (stats par client pour la feature diff_avg_amt,
   cf. phase 1.1) au démarrage
     - en test : depuis work/client_trx_analysis.csv en local (produit par prepare_dataset.py)
-    - en prod (Render) : depuis le bucket S3 bucket-fraud-detection (préfixe work/), l'API
+    - en prod (Render) : depuis le bucket S3 bucket-fraud-detection-gviel (préfixe work/), l'API
       n'ayant pas accès au disque local où tourne l'entraînement — le télécharger au démarrage
       avant de servir des prédictions
     - si le fichier est indisponible (client inconnu ou fichier manquant) : repli sur la moyenne
@@ -191,10 +191,14 @@ Objectif : collecter les nouvelles transaction, les stocker, faire la détection
       transaction synthétique en flux temps réel)
     - label de fraude de la ligne ajoutée : réutilise la prédiction is_fraud de fraud_detect (pas
       de vérité terrain disponible pour une transaction temps réel)
-    - output : la transaction synthétique est ajoutée (append) à work/fraudTest.csv (en test) /
-      à la copie work/fraudTest.csv sur S3 (en prod, cf. phase 3.3 et phase 5) — fait grossir ce
-      fichier au fil du temps jusqu'à dépasser le nombre de lignes de data/fraudTest.csv, ce qui
-      déclenche la branche de ré-entraînement du DAG Model Training (phase 3.3)
+    - output : la transaction synthétique est ajoutée (append) à work/fraudTest.csv, toujours EN
+      LOCAL (test comme prod — Airflow reste local, cf. phase 5) — fait grossir ce fichier au fil
+      du temps jusqu'à dépasser le nombre de lignes de data/fraudTest.csv, ce qui déclenche la
+      branche de ré-entraînement du DAG Model Training (phase 3.3)
+    - en prod : une fois la ligne ajoutée localement, synchroniser un snapshot de work/fraudTest.csv
+      sur S3 (préfixe work/) — ici, à la fin de la collecte+prédiction (dernière étape du DAG à
+      modifier ce fichier), pas dans le DAG Model Training (phase 3.3) qui ne tourne que
+      périodiquement et verrait sinon un fichier obsolète
     - si OK fin du DAG
 
 - synopsis DAG :
@@ -226,24 +230,33 @@ Agent CodeWriter #1
 Objectif: déployer et exécuter de façon ponctuelle l'entrainement de plusieurs modèles.
 
 - schedule : à exécuter toute les x minutes (schedule_interval=60min par défaut)
-- en test : tous les fichiers (@data/fraudTest.csv, @work/fraudTest.csv, @work/fraudTest_prepared.csv,
-  @work/client_trx_analysis.csv) sont lus/écrits en local (plus rapide et plus simple, comportement
-  actuel, inchangé)
-- en prod : les mêmes fichiers sont lus/écrits sur le bucket S3 bucket-fraud-detection (préfixes
-  data/ et work/, cf. Phase 5) au lieu du disque local
-- branch :
+- en test comme en prod : @data/fraudTest.csv, @work/fraudTest.csv et @work/fraudTest_prepared.csv
+  sont lus/écrits EN LOCAL en permanence, y compris en prod (Airflow reste local, cf. Phase 5).
+  @work/fraudTest_prepared.csv reste de toute façon un fichier purement local au conteneur
+  (produit par prepare_dataset.py, consommé par train_model.py dans le même subprocess/conteneur
+  airflow-scheduler) : aucun composant distant n'en a jamais besoin.
+- en prod uniquement, S3 (bucket bucket-fraud-detection-gviel, préfixe work/) sert de snapshot/
+  point de reprise, synchronisé au plus près de chaque écriture qui modifie réellement le fichier
+  concerné (pas dans le DAG Model Training pour @work/fraudTest.csv — il ne tourne que
+  périodiquement et verrait un fichier obsolète) :
+  - @work/fraudTest.csv : synchronisé par la task augment_training_data (DAG ETL & Fraud
+    Detection, phase 3.1) juste après chaque ajout de ligne — c'est la seule task qui modifie ce
+    fichier
+  - @work/client_trx_analysis.csv : synchronisé par la task train du DAG Model Training (phase
+    3.3, ci-dessous), une fois l'entraînement réellement terminé — requis par l'API (Phase 2) qui
+    n'a pas accès au disque local où tourne l'entraînement
+- branch : (toujours en local, y compris en prod)
     - si le fichier @work/fraudTest.csv n'existe pas -> copy_data -> prepare (pour lancer le training)
     - sinon si le fichier @work/fraudTest.csv contient plus de lignes que le fichier original @data/fraudTest.csv -> prepare(lance le training)
     - autrement on arrete le DAG (stop_dag)
-- task copy_data : copier @data/fraudTest.csv dans @work/fraudTest.csv
-    - en prod : @data/fraudTest.csv est déjà présent sur S3 (préfixe data/) ; si @work/fraudTest.csv
-      n'existe pas encore sur S3 (préfixe work/), le créer par copie depuis data/ vers work/
-      directement sur S3 (pas de download/upload local)
-- task prepare : on y exécute prepare_model.py : cf. specs phase 1.1
-    - en prod : une fois @work/fraudTest_prepared.csv et @work/client_trx_analysis.csv produits
-      (localement dans le conteneur), les uploader sur S3 (préfixe work/) pour que l'API (Phase 2)
-      puisse charger @work/client_trx_analysis.csv au démarrage
+- task copy_data : copier @data/fraudTest.csv dans @work/fraudTest.csv, toujours en local (y
+  compris en prod — cf. ci-dessus)
+- task prepare : on y exécute prepare_model.py : cf. specs phase 1.1 — reste purement local, y
+  compris en prod (aucun upload S3 ici, cf. ci-dessus pour le détail des points de synchronisation)
 - si task prepare réussie -> task train : on y execute train_model.py : cf. specs phase 1.2
+    - en prod : une fois l'entraînement terminé (subprocess réussi), uploader
+      @work/client_trx_analysis.csv sur S3 (préfixe work/), indépendamment du résultat de la
+      comparaison status=best ci-dessous (les stats client ne sont pas liées à un run précis)
     - train_model.py tague toujours le meilleur modèle de CE run avec status=best (cf. phase 1.2),
       même s'il est moins bon que le meilleur historique — la task train ne doit donc appeler
       POST /reload-model de l'API (phase 2) que si ce nouveau modèle est bien devenu LE meilleur
@@ -312,25 +325,33 @@ Définition de la stack à déployer :
             - DAG ETL & Fraud Detection interagit avec :
                 - Neon DB fraud-detection-db
                 - API fraud detection sur Render
-                - Bucket S3 bucket-fraud-detection (non défini à ce jour) permettant de stocker les transactions
+                - Bucket S3 bucket-fraud-detection-gviel (bucket-fraud-detection déjà pris
+                  globalement, suffixe -gviel ajouté pour l'unicité) permettant de stocker :
+                    - work/yyyyMMdd/trx-{yyyyMMdd_HHmmss}_{trans_num}.json : les transactions
+                      collectées, écrites directement sur S3 par store_trx (en prod)
+                    - work/fraudTest.csv : snapshot de la copie de travail locale (celle-ci reste
+                      un fichier LOCAL en permanence, complétée au fil du temps par la task
+                      augment_training_data qui ajoute une transaction synthétique dérivée de
+                      chaque transaction collectée, pour provoquer le déclenchement périodique d'un
+                      nouveau training côté DAG Model Training, phase 3.3) — synchronisé sur S3
+                      par cette même task, juste après chaque ajout de ligne (en prod uniquement)
                 - SMTP Gmail
             - DAG Fraud Report interagit avec :
                 - Neon DB fraud-detection-db
                 - SMTP Gmail
-                - (en option pour plus tard: bucket S3 bucket-fraud-detection pour stocker un rapport PDF)
+                - (en option pour plus tard: bucket S3 bucket-fraud-detection-gviel pour stocker un rapport PDF)
             - DAG Model Training interragit avec:
                 - MLFLow + S3 aws-s3-mlflow de MLFlow (pour déposer le modèle)
-                - buket S3 bucket-fraud-detection dans lequel il faudra stocker (en prod
-                  uniquement — en test ces fichiers restent en local, cf. phase 3.3)
-                    - data/fraudTest.csv : la version originale
-                    - work/fraudTest.csv : la version de travail, complétée au fil du temps par
-                      la task augment_training_data (DAG ETL & Fraud Detection, phase 3.1) qui
-                      ajoute une transaction synthétique dérivée de chaque transaction collectée,
-                      pour provoquer le déclenchement périodique d'un nouveau training
-                    - work/fraudTest_prepared.csv : la version préparée pour le training du modèle
-                    - work/client_trx_analysis.csv : pour les calculs des features — également
-                      lu par l'API (phase 2) au démarrage en prod, pour la feature diff_avg_amt
-                    - work/yyyyMMdd/trx-{yyyyMMdd_HHmmss}_{trans_num}.json : les transactions collectées
+                - buket S3 bucket-fraud-detection-gviel : @data/fraudTest.csv et @work/fraudTest.csv
+                  restent des fichiers LOCAUX en permanence (test comme prod, cf. phase 3.3 — la
+                  synchronisation de work/fraudTest.csv se fait ailleurs, cf. DAG ETL & Fraud
+                  Detection ci-dessus, pas ici). La task train (en prod uniquement, une fois
+                  l'entraînement terminé) uploade work/client_trx_analysis.csv sur S3 (préfixe
+                  work/) — pour les calculs des features, également lu par l'API (phase 2) au
+                  démarrage en prod, pour la feature diff_avg_amt
+                  (work/fraudTest_prepared.csv n'est PAS uploadé : fichier intermédiaire purement
+                  local au conteneur airflow-scheduler, cf. phase 3.3 — aucun composant distant
+                  n'en a besoin)
                 - API fraud detection sur Render (POST /reload-model, cf. phase 2 et 3.3) via un
                   secret partagé MODEL_RELOAD_TOKEN (même valeur configurée côté Airflow et
                   côté Render)
