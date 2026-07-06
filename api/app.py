@@ -154,15 +154,26 @@ def _load_from_mlflow() -> None:
     run_id = runs.iloc[0]["run_id"]
     model  = mlflow.sklearn.load_model(f"runs:/{run_id}/model")
 
-    run_data  = client.get_run(run_id)
-    local_pkl = run_data.data.tags.get("local_pkl_path")
-    if local_pkl and os.path.exists(local_pkl):
-        with open(local_pkl, "rb") as f:
+    run_data = client.get_run(run_id)
+    encoders, features = {}, []
+    try:
+        # Encoders/features poussés par train.py --env prod (préprocessing.pkl, cf.
+        # tag_and_save) — introuvable pour les runs entraînés avant ce fix.
+        prep_path = mlflow.artifacts.download_artifacts(
+            f"runs:/{run_id}/preprocessing/preprocessing.pkl"
+        )
+        with open(prep_path, "rb") as f:
             art = pickle.load(f)
         encoders = art.get("encoders", {})
         features = art.get("features", [])
-    else:
-        encoders, features = {}, []
+    except Exception:
+        # Repli : ancien mécanisme test-only (tag local_pkl_path, cf. tag_and_save env=test)
+        local_pkl = run_data.data.tags.get("local_pkl_path")
+        if local_pkl and os.path.exists(local_pkl):
+            with open(local_pkl, "rb") as f:
+                art = pickle.load(f)
+            encoders = art.get("encoders", {})
+            features = art.get("features", [])
 
     model_class = run_data.data.tags.get("model_class", "?")
     run_name    = run_data.data.tags.get("mlflow.runName", "?")

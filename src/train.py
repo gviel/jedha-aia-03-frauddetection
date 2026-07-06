@@ -22,6 +22,7 @@ import logging
 import os
 import pickle
 import sys
+import tempfile
 import time
 import warnings
 from datetime import datetime
@@ -237,7 +238,12 @@ def train_all(config: dict, X_train, X_test, y_train, y_test,
 
                 if env == "prod":
                     mlflow.sklearn.log_model(model, artifact_path="model")
-                    log.info("  Modèle poussé vers MLFlow S3 (run_id=%s)", run_id)
+                    with tempfile.TemporaryDirectory() as tmp_dir:
+                        prep_path = os.path.join(tmp_dir, "preprocessing.pkl")
+                        with open(prep_path, "wb") as f:
+                            pickle.dump({"encoders": encoders, "features": features}, f)
+                        mlflow.log_artifact(prep_path, artifact_path="preprocessing")
+                    log.info("  Modèle + encoders/features poussés vers MLFlow S3 (run_id=%s)", run_id)
 
                 results.append({
                     "model_name":    name,
