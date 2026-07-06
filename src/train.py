@@ -60,7 +60,7 @@ FEATURES = [
     "hour", "dow",
     "gender", "state", "category", "merchant", "job",
 ]
-CAT_FEATURES = ["gender", "state", "category", "merchant", "job"]
+CAT_FEATURES = ["gender", "state", "category", "merchant", "job", "zip"]
 TARGET    = "is_fraud"
 MODEL_DIR = Path("model")
 

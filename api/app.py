@@ -70,7 +70,7 @@ def _build_features(trx: dict, client_avg_amt: dict, client_avg_amt_fallback: fl
     # les clés Optional avec la valeur None (pas absentes) — d'où (trx.get(key) or default).
     return pd.DataFrame([{
         "amt":          trx["amt"],
-        "zip":          trx.get("zip") or 0,
+        "zip":          str(trx.get("zip") or ""),
         "lat":          trx["lat"],
         "long":         trx["long"],
         "city_pop":     trx.get("city_pop") or 0,
