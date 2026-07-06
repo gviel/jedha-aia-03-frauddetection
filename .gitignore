@@ -46,3 +46,6 @@ catboost_info/
 
 # Vidéo de démo (828 Mo — dépasse la limite GitHub de 100 Mo/fichier sans Git LFS)
 docs/enonce/*.mov
+
+# Notes de travail personnelles (pas un livrable du projet)
+docs/travail/
