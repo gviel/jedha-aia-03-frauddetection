@@ -50,7 +50,7 @@
         </mxCell>
 
         <!-- Edges: Airflow -->
-        <mxCell id="e1" value="fetch_trx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="airflow" target="jedha">
+        <mxCell id="e1" value="fetch_trx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="jedha">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="380" y="130" />
@@ -58,15 +58,15 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="e2" value="store_trx / fraud_detect&#10;(INSERT / UPDATE)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="airflow" target="neon">
+        <mxCell id="e2" value="store_trx / fraud_detect&#10;(INSERT / UPDATE)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="neon">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e3" value="sync fraudTest.csv,&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="airflow" target="s3Trx">
+        <mxCell id="e3" value="sync fraudTest.csv,&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="s3Trx">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
-        <mxCell id="e4" value="fraud_detect : POST /predict&#10;train : POST /reload-model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="airflow" target="renderApi">
+        <mxCell id="e4" value="fraud_detect : POST /predict&#10;train : POST /reload-model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="renderApi">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1080" y="390" />
@@ -74,7 +74,7 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="e5" value="train : log métriques/modèle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;dashed=1;" edge="1" parent="1" source="airflow" target="mlflow">
+        <mxCell id="e5" value="train : log métriques/modèle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="airflow" target="mlflow">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="770" y="140" />
@@ -82,7 +82,7 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="e6" value="alertes + rapport quotidien" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="airflow" target="smtp">
+        <mxCell id="e6" value="alertes + rapport quotidien" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="smtp">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="380" y="740" />
@@ -91,12 +91,12 @@
         </mxCell>
 
         <!-- Edges: MLFlow -->
-        <mxCell id="e7" value="stocke artefacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="mlflow" target="s3Mlflow">
+        <mxCell id="e7" value="stocke artefacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="mlflow" target="s3Mlflow">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
         <!-- Edges: Render API -->
-        <mxCell id="e8" value="charge le modèle&#10;(status=best)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;dashed=1;" edge="1" parent="1" source="renderApi" target="mlflow">
+        <mxCell id="e8" value="charge le modèle&#10;(status=best)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="renderApi" target="mlflow">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1360" y="140" />
@@ -104,7 +104,7 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="e9" value="télécharge&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;dashed=1;" edge="1" parent="1" source="renderApi" target="s3Trx">
+        <mxCell id="e9" value="télécharge&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="renderApi" target="s3Trx">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1360" y="670" />
@@ -113,7 +113,7 @@
         </mxCell>
 
         <!-- Edges: Dashboard -->
-        <mxCell id="e10" value="lecture transactions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="dashboard" target="neon">
+        <mxCell id="e10" value="lecture transactions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="dashboard" target="neon">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1730" y="790" />
@@ -122,7 +122,7 @@
           </mxGeometry>
         </mxCell>
 
-        <mxCell id="e11" value="/health" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=13;" edge="1" parent="1" source="dashboard" target="renderApi">
+        <mxCell id="e11" value="/health" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="dashboard" target="renderApi">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
 
