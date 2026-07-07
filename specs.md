@@ -338,6 +338,8 @@ Agent : Devops engineer #1
   `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
 - BDD PgSQL (Neon, projet `fraud-detection-db`) : chaîne de connexion dans `DATABASE_URL`
   (`airflow/.env.production`/`dashboard/.env.production`, non commités)
+- Airflow UI (stack docker locale) : `http://localhost:8080/dags/`
+- Bucket AWS S3 : `s3://bucket-fraud-detection-gviel` ou `https://s3.console.aws.amazon.com/s3/buckets/bucket-fraud-detection-gviel?region=eu-west-3&tab=objects`
 
 Définition de la stack à déployer :
     - API fraud detection sur Render
@@ -404,10 +406,11 @@ Définition de la stack à déployer :
 
 Schémas dans `docs/*.drawio` (format `mxfile`/`app.diagrams.net`, éditables dans draw.io/diagrams.net).
 
-Convention de couleur générique (schémas fonctionnels/phase 4, palette pastel) : bleu `#dae8fc`/
-`#6c8ebf` pour les systèmes externes et le stockage (cloud, cylindre) ; vert `#d5e8d4`/`#82b366`
-pour les services applicatifs cœur (API, registre de modèles) ; jaune `#fff2cc`/`#d6b656` pour
-Airflow ; violet `#e1d5e7`/`#9673a6` pour le monitoring/dashboard.
+Convention de couleur générique (schémas fonctionnels/phase 4, palette pastel) :
+    - bleu `#dae8fc`/ `#6c8ebf` pour les systèmes externes et le stockage (cloud, cylindre)
+    - vert `#d5e8d4`/`#82b366` pour les services applicatifs cœur (API, registre de modèles)
+    - jaune `#fff2cc`/`#d6b656` pour Airflow
+    - violet `#e1d5e7`/`#9673a6` pour le monitoring/dashboard
 
 Palette spécifique au schéma **prod** (`docs/architecture_prod.drawio`, couleurs vives, une couleur
 distincte par service plutôt que par catégorie générique) :
