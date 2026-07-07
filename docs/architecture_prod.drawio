@@ -1,131 +1,119 @@
-<mxfile host="app.diagrams.net" agent="claude-code" version="24.0.0">
-  <diagram id="prod-architecture" name="Architecture Prod (Phase 5-6)">
-    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1920" pageHeight="850" math="0" shadow="0">
+<mxfile host="app.diagrams.net">
+  <diagram name="Architecture Getaround" id="kAcSTIh_5AMz7kwUcB8f">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
-        <!-- Title -->
-        <mxCell id="title" value="Architecture Prod — Phase 5 (déploiement) &amp; Phase 6 (dashboard)" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="40" y="10" width="1000" height="40" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-144" parent="1" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" value="&lt;div&gt;Architecture Pipeline de Production&lt;/div&gt;" vertex="1">
+          <mxGeometry height="40" width="570" x="220" y="20" as="geometry" />
         </mxCell>
-
-        <!-- External systems -->
-        <mxCell id="jedha" value="Real-time Payment API&#10;(sdacelo-real-time-fraud-detection.hf.space)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#8e44ad;strokeColor=#5b2c6f;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="40" y="70" width="300" height="110" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-145" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#8e44ad;strokeColor=#5b2c6f;fontColor=#ffffff;fontSize=17;fontStyle=0" value="Real-time Payment API" vertex="1">
+          <mxGeometry height="110" width="300" x="48" y="70" as="geometry" />
         </mxCell>
-        <mxCell id="smtp" value="SMTP Gmail" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#95a5a6;strokeColor=#5f6a6a;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="40" y="700" width="220" height="80" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-146" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#95a5a6;strokeColor=#5f6a6a;fontColor=#ffffff;fontSize=17;fontStyle=0" value="SMTP Gmail" vertex="1">
+          <mxGeometry height="80" width="220" x="90" y="700" as="geometry" />
         </mxCell>
-
-        <!-- Airflow (single block, local) -->
-        <mxCell id="airflow" value="Airflow 3.2.2&#10;(local — LocalExecutor)&#10;&#10;3 DAGs :&#10;— ETL &amp; Fraud Detection (1/min)&#10;— Fraud Report (quotidien)&#10;— Model Training (conditionnel)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1c40f;strokeColor=#b7950b;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="420" y="240" width="340" height="300" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-147" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1c40f;strokeColor=#b7950b;fontSize=17;fontStyle=1;align=center;verticalAlign=middle;" value="Airflow 3.2.2&#xa;(local — LocalExecutor)&#xa;&#xa;3 DAGs :&#xa;— ETL &amp; Fraud Detection (1/min)&#xa;— Fraud Report (quotidien)&#xa;— Model Training (conditionnel)" vertex="1">
+          <mxGeometry height="300" width="340" x="420" y="240" as="geometry" />
         </mxCell>
-
-        <!-- Data layer -->
-        <mxCell id="neon" value="PgSQL Neon&#10;fraud-detection-db&#10;(real_time_transactions)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#2ecc71;strokeColor=#1e8449;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="460" y="600" width="220" height="130" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-148" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#2ecc71;strokeColor=#1e8449;fontColor=#ffffff;fontSize=17;" value="PgSQL Neon&#xa;fraud-detection-db&#xa;(real_time_transactions)" vertex="1">
+          <mxGeometry height="130" width="220" x="460" y="610" as="geometry" />
         </mxCell>
-        <mxCell id="s3Trx" value="S3 bucket-fraud-detection-gviel&#10;(transactions JSON, fraudTest.csv,&#10;client_trx_analysis.csv)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="740" y="600" width="300" height="140" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-149" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=17;" value="S3 bucket-fraud-detection-gviel&#xa;(transactions JSON, fraudTest.csv,&#xa;client_trx_analysis.csv)" vertex="1">
+          <mxGeometry height="140" width="300" x="740" y="600" as="geometry" />
         </mxCell>
-
-        <!-- MLFlow + artifact store -->
-        <mxCell id="mlflow" value="MLFlow v3.7.0&#10;(gviel-mlflow37.hf.space)&#10;tracking + registry" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4169e1;strokeColor=#27408b;fontColor=#ffffff;fontSize=17;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="820" y="80" width="300" height="120" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-150" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4169e1;strokeColor=#27408b;fontColor=#ffffff;fontSize=17;fontStyle=1;" value="MLFlow v3.7.0&#xa;(gviel-mlflow37.hf.space)&#xa;tracking + registry" vertex="1">
+          <mxGeometry height="120" width="300" x="819" y="80" as="geometry" />
         </mxCell>
-        <mxCell id="s3Mlflow" value="S3 aws-s3-mlflow&#10;(artefacts modèles)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="860" y="260" width="240" height="110" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-151" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#d2691e;strokeColor=#7b3f00;fontColor=#ffffff;fontSize=17;" value="S3 aws-s3-mlflow&#xa;(artefacts modèles)" vertex="1">
+          <mxGeometry height="110" width="240" x="860" y="260" as="geometry" />
         </mxCell>
-
-        <!-- Fraud Detection API (Render) -->
-        <mxCell id="renderApi" value="Fraud Detection API (Render)&#10;jedha-aia-03-frauddetection&#10;.onrender.com&#10;/predict · /health · /reload-model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e74c3c;strokeColor=#a93226;fontColor=#ffffff;fontSize=17;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="1200" y="250" width="320" height="160" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-152" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e74c3c;strokeColor=#a93226;fontColor=#ffffff;fontSize=17;fontStyle=1;" value="Fraud Detection API (Render)&#xa;jedha-aia-03-frauddetection&#xa;.onrender.com&#xa;/predict · /health · /reload-model" vertex="1">
+          <mxGeometry height="160" width="320" x="1200" y="250" as="geometry" />
         </mxCell>
-
-        <!-- Streamlit Dashboard -->
-        <mxCell id="dashboard" value="Dashboard Streamlit&#10;Community Cloud&#10;(suivi transactions/statut)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c3e50;strokeColor=#1b2631;fontColor=#ffffff;fontSize=17;" vertex="1" parent="1">
-          <mxGeometry x="1600" y="270" width="260" height="130" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-153" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c3e50;strokeColor=#1b2631;fontColor=#ffffff;fontSize=17;" value="Dashboard Streamlit&#xa;Community Cloud&#xa;(suivi transactions/statut)" vertex="1">
+          <mxGeometry height="130" width="260" x="1607" y="270" as="geometry" />
         </mxCell>
-
-        <!-- Edges: Airflow -->
-        <mxCell id="e1" value="fetch_trx" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="jedha">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-154" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-147" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" target="RmcBK2_sj3oXUNAOigDG-145" value="fetch_trx">
+          <mxGeometry relative="1" x="0.3253" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="380" y="130" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <mxCell id="e2" value="store_trx / fraud_detect&#10;(INSERT / UPDATE)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="neon">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-155" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-147" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" target="RmcBK2_sj3oXUNAOigDG-148" value="store_trx / fraud_detect&#xa;(INSERT / UPDATE)">
+          <mxGeometry relative="1" x="0.2222" y="-90" as="geometry">
+            <mxPoint y="-5" as="offset" />
+          </mxGeometry>
         </mxCell>
-
-        <mxCell id="e3" value="sync fraudTest.csv,&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="s3Trx">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-156" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" value="sync fraudTest.csv,&#xa;client_trx_analysis.csv">
+          <mxGeometry relative="1" x="0.6667" y="40" as="geometry">
+            <mxPoint x="-20" y="-35" as="offset" />
+            <mxPoint x="590.0666666666666" y="575" as="sourcePoint" />
+            <mxPoint x="890.0666666666666" y="635" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <mxCell id="e4" value="fraud_detect : POST /predict&#10;train : POST /reload-model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="renderApi">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-157" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-147" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" target="RmcBK2_sj3oXUNAOigDG-152" value="fraud_detect : POST /predict&#xa;train : POST /reload-model">
+          <mxGeometry relative="1" x="0.04" y="-60" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="1080" y="390" />
+              <mxPoint x="1130" y="390" />
+              <mxPoint x="1130" y="330" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <mxCell id="e5" value="train : log métriques/modèle" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="airflow" target="mlflow">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-158" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;dashed=1;" value="train : log métriques/modèle">
+          <mxGeometry relative="1" x="0.1613" y="20" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
-              <mxPoint x="770" y="140" />
+              <mxPoint x="790" y="138" />
             </Array>
+            <mxPoint x="780" y="388" as="sourcePoint" />
+            <mxPoint x="840" y="138" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-
-        <mxCell id="e6" value="alertes + rapport quotidien" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="airflow" target="smtp">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-159" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-147" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" target="RmcBK2_sj3oXUNAOigDG-146" value="alertes + rapport quotidien">
+          <mxGeometry relative="1" x="0.0864" y="-60" as="geometry">
+            <mxPoint y="1" as="offset" />
             <Array as="points">
               <mxPoint x="380" y="740" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <!-- Edges: MLFlow -->
-        <mxCell id="e7" value="stocke artefacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="mlflow" target="s3Mlflow">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-160" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" value="stocke artefacts">
+          <mxGeometry relative="1" x="0.0356" y="74" as="geometry">
+            <mxPoint x="-1" as="offset" />
+            <mxPoint x="975" y="200" as="sourcePoint" />
+            <mxPoint x="975.0666666666671" y="260" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Edges: Render API -->
-        <mxCell id="e8" value="charge le modèle&#10;(status=best)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="renderApi" target="mlflow">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-161" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-152" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;dashed=1;" target="RmcBK2_sj3oXUNAOigDG-150" value="charge le modèle&#xa;(status=best)">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1360" y="140" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <mxCell id="e9" value="télécharge&#10;client_trx_analysis.csv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;dashed=1;" edge="1" parent="1" source="renderApi" target="s3Trx">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-162" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-152" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;dashed=1;" target="RmcBK2_sj3oXUNAOigDG-149" value="télécharge&#xa;client_trx_analysis.csv">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1360" y="670" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <!-- Edges: Dashboard -->
-        <mxCell id="e10" value="lecture transactions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="dashboard" target="neon">
-          <mxGeometry relative="1" as="geometry">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-163" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-153" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" target="RmcBK2_sj3oXUNAOigDG-148" value="lecture transactions">
+          <mxGeometry relative="1" x="-0.0001" as="geometry">
+            <mxPoint as="offset" />
             <Array as="points">
               <mxPoint x="1730" y="790" />
               <mxPoint x="570" y="790" />
             </Array>
           </mxGeometry>
         </mxCell>
-
-        <mxCell id="e11" value="/health" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;" edge="1" parent="1" source="dashboard" target="renderApi">
+        <mxCell id="RmcBK2_sj3oXUNAOigDG-164" edge="1" parent="1" source="RmcBK2_sj3oXUNAOigDG-153" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=16;" target="RmcBK2_sj3oXUNAOigDG-152" value="/health">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-
       </root>
     </mxGraphModel>
   </diagram>

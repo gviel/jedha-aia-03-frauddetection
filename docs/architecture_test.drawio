@@ -1,0 +1,64 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="DAGs Airflow" id="l-2CGZyTYb0cviVH8eeE">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-1" parent="1" style="text;html=1;fontSize=26;fontStyle=1;align=left;verticalAlign=middle;" value="Architecture Test / Intégration — stacks Docker locales" vertex="1">
+          <mxGeometry height="40" width="1100" x="40" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-2" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#8e44ad;strokeColor=#5b2c6f;fontColor=#ffffff;fontSize=17;" value="Real-time Payment API" vertex="1">
+          <mxGeometry height="100" width="260" x="40" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-3" parent="1" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#95a5a6;strokeColor=#5f6a6a;fontColor=#ffffff;fontSize=17;" value="SMTP Gmail" vertex="1">
+          <mxGeometry height="90" width="220" x="60" y="430" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#d6b656;dashed=1;verticalAlign=top;align=left;fontStyle=1;fontSize=17;spacingTop=8;spacingLeft=12;fontColor=#8a6d1f;arcSize=10;" value="Stack Airflow (LocalExecutor)" vertex="1">
+          <mxGeometry height="560" width="760" x="380" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-5" parent="1" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#2ecc71;strokeColor=#1e8449;fontColor=#ffffff;fontSize=17;" value="fraud-db&#xa;postgres:16-alpine&#xa;(transactions temps réel)" vertex="1">
+          <mxGeometry height="110" width="170" x="700" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f1c40f;strokeColor=#b7950b;fontColor=#ffffff;fontSize=17;fontStyle=1;" value="airflow-scheduler&lt;br&gt;LocalExecutor&lt;br&gt;(exécute les 3 DAGs)" vertex="1">
+          <mxGeometry height="140" width="220" x="410" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e74c3c;strokeColor=#a93226;fontColor=#ffffff;fontSize=16;" value="fraud-detection-api&lt;br&gt;(fraud_detection_api_cicd)&lt;br&gt;:8000" vertex="1">
+          <mxGeometry height="140" width="210" x="700" y="457" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#2c3e50;strokeColor=#1b2631;fontColor=#ffffff;fontSize=17;" value="dashboard&#xa;(fraud_dashboard_test)&#xa;:8501" vertex="1">
+          <mxGeometry height="140" width="190" x="940" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-9" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=0.518;entryY=0.957;entryDx=0;entryDy=0;entryPerimeter=0;" target="LgWGSjVcJ75m6rRBfF-v-2" value="fetch_trx : GET /current-transactions">
+          <mxGeometry relative="1" x="0.2726" y="11" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="410" y="289" as="sourcePoint" />
+            <mxPoint x="183" y="229" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-10" edge="1" parent="1" source="LgWGSjVcJ75m6rRBfF-v-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=1;exitY=0.25;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="LgWGSjVcJ75m6rRBfF-v-5" value="store_trx / fraud_detect (INSERT/UPDATE)&#xa;daily_report (lecture)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-11" edge="1" parent="1" source="LgWGSjVcJ75m6rRBfF-v-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=1;exitY=0.75;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="LgWGSjVcJ75m6rRBfF-v-7" value="fraud_detect : POST /predict&#xa;train : POST /reload-model">
+          <mxGeometry relative="1" x="-0.1736" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-12" edge="1" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=0.625;entryY=0.2;entryDx=0;entryDy=0;entryPerimeter=0;" target="LgWGSjVcJ75m6rRBfF-v-3" value="alertes + rapport quotidien">
+          <mxGeometry relative="1" x="-0.2983" y="23" as="geometry">
+            <mxPoint as="offset" />
+            <mxPoint x="410" y="347" as="sourcePoint" />
+            <mxPoint x="280" y="467" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-13" edge="1" parent="1" source="LgWGSjVcJ75m6rRBfF-v-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="LgWGSjVcJ75m6rRBfF-v-5" value="lecture transactions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="LgWGSjVcJ75m6rRBfF-v-14" edge="1" parent="1" source="LgWGSjVcJ75m6rRBfF-v-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;fontSize=15;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="LgWGSjVcJ75m6rRBfF-v-7" value="/health">
+          <mxGeometry relative="1" x="-0.3069" y="-5" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
