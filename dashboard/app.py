@@ -10,12 +10,14 @@ import os
 from datetime import date
 
 import pandas as pd
-import psycopg2
 import requests
 import streamlit as st
+from sqlalchemy import create_engine
 
 DATABASE_URL  = os.getenv("DATABASE_URL", "postgresql://fraud:fraud@fraud-db:5432/fraud")
 FRAUD_API_URL = os.getenv("FRAUD_API_URL", "http://fraud-detection-api:8000")
+
+_engine = create_engine(DATABASE_URL)
 
 st.set_page_config(page_title="Fraud Detection — Suivi", layout="wide")
 
@@ -65,7 +67,7 @@ def load_transactions(day: date) -> pd.DataFrame:
         WHERE stored_at::date = %s
         ORDER BY stored_at DESC
     """
-    with psycopg2.connect(DATABASE_URL) as conn:
+    with _engine.connect() as conn:
         df = pd.read_sql(query, conn, params=(day,))
     df["distance_km"] = df.apply(
         lambda r: _haversine_km(r["lat"], r["long_"], r["merch_lat"], r["merch_long"]), axis=1,
@@ -87,12 +89,12 @@ def load_api_health() -> dict | None:
 st.title("🕵️ Fraud Detection — Suivi des transactions")
 
 health = load_api_health()
-cols = st.columns(4)
 if health:
+    cols = st.columns(3)
     cols[0].metric("Statut API", health.get("status", "?"))
     cols[1].metric("Environnement", health.get("env", "?"))
-    cols[2].metric("Modèle", health.get("model_name") or "?")
-    cols[3].metric("Version API", health.get("api_version", "?"))
+    cols[2].metric("Version API", health.get("api_version", "?"))
+    st.metric("Modèle", health.get("model_name") or "?")
 else:
     st.warning(f"API de prédiction injoignable ({FRAUD_API_URL}) — infos modèle indisponibles.")
 
@@ -154,7 +156,7 @@ else:
 
     st.dataframe(
         display_df.style.apply(_row_style, axis=1),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
