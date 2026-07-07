@@ -39,7 +39,9 @@ x-airflow-common:
     # airflow/.env.template) : en mode prod, DATABASE_URL pointe vers Neon au lieu du fraud-db
     # local — utilisé par les DAGs 3.1 (realtime) et 3.2 (daily_report).
     APP_ENV: "${APP_ENV:-test}"
-    FRAUD_API_URL: "http://fraud-detection-api:8000"
+    # http://fraud-detection-api:8000 (réseau Docker interne) en test, URL publique Render en
+    # prod (l'API n'est pas déployée localement en prod) — cf. airflow/.env.template
+    FRAUD_API_URL: "${FRAUD_API_URL:-http://fraud-detection-api:8000}"
     FRAUD_THRESHOLD: "0.7"
     DAG_ETL_FRAUD_DETECTION_CRON: "${DAG_ETL_FRAUD_DETECTION_CRON:-* * * * *}"
     DATABASE_URL: "${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
