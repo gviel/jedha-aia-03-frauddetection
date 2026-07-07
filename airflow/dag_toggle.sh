@@ -42,17 +42,35 @@ run_airflow() {
     docker exec "$SCHEDULER_CONTAINER" airflow "$@"
 }
 
+raw_list() {
+    run_airflow dags list 2>/dev/null | grep -v '^\[info\|^==='
+}
+
 list_raw() {
-    run_airflow dags list 2>/dev/null | grep -v '^\[info\|^===\|^dag_id '
+    raw_list | grep -v '^dag_id '
 }
 
 project_dags() {
     list_raw | awk -F'|' '{gsub(/^ +| +$/,"",$1); print $1}' | sort -u
 }
 
-print_status() {
-    local filter="$1"
-    list_raw | grep -E "^${filter}[[:space:]]" || true
+# Affiche l'en-tête de colonnes puis les lignes correspondant aux DAGs demandés —
+# l'en-tête n'est imprimée que s'il y a au moins un résultat, pour ne pas l'afficher
+# devant une sortie vide (dag_id inconnu, filtre qui ne matche rien).
+print_statuses() {
+    local -a targets=("$@")
+    local joined regex all rows
+    joined="$(IFS='|'; echo "${targets[*]}")"
+    regex="^(${joined})[[:space:]]"
+    all="$(raw_list)"
+    rows="$(echo "$all" | grep -E "$regex" || true)"
+    if [ -n "$rows" ]; then
+        local header
+        header="$(echo "$all" | grep -E '^dag_id ')"
+        echo "$header"
+        echo "$header" | sed -E 's/[^|]/-/g; s/\|/+/g'
+        echo "$rows"
+    fi
 }
 
 if [ "$TARGET" = "all" ]; then
@@ -74,9 +92,9 @@ case "$ACTION" in
             run_airflow dags "$ACTION" "$dag"
         done
         echo "--- État après \"$ACTION\" ---"
-        for dag in "${TARGETS[@]}"; do print_status "$dag"; done
+        print_statuses "${TARGETS[@]}"
         ;;
     status)
-        for dag in "${TARGETS[@]}"; do print_status "$dag"; done
+        print_statuses "${TARGETS[@]}"
         ;;
 esac
