@@ -2,7 +2,7 @@
 
 Certification RNCP7 AIA
 
-Enoncé du projet dans : @docs/enonce/ENONCE.md
+Énoncé du projet dans : @docs/enonce/ENONCE.md
 
 ---
 
@@ -30,17 +30,17 @@ Enoncé du projet dans : @docs/enonce/ENONCE.md
 - docs/enonce : contient des documents pour l'énoncé du projet
 - on ignore pour l'instant le notebook + env_ml.yaml
 - on a plusieurs modules
-    - des scripts python de préparation+cleaning du dataset et training de modèle qui peuvent etre lancé facilement et paramétrables; le modèle est poussé sur le S3 de MLFlow et taggé en fonction de ses résultats
+    - des scripts python de préparation+cleaning du dataset et training de modèle qui peuvent être lancés facilement et paramétrables; le modèle est poussé sur le S3 de MLFlow et taggé en fonction de ses résultats
     - une API de prédiction qui utilisera un modèle MLFlow
     - un DAG Airflow qui pourra envoyer des emails (utilisation de Github action pertinente?)
 - on utilisera des fichiers requirements.txt pour les env d'exécution python
-- on fera d'abord les tests en local avec Docker et des images légère de type python-3.12-slim (on verra plus tard pour la mise en prod)
+- on fera d'abord les tests en local avec Docker et des images légères de type python-3.12-slim (on verra plus tard pour la mise en prod)
 
 ---
 
-## Phase 1 : Construction et entrainements des modèles
+## Phase 1 : Construction et entraînements des modèles
 
-### 1.1 - Script de préparation du dataset avant entrainement
+### 1.1 - Script de préparation du dataset avant entraînement
 
 Agent CodeWriter #1
 
@@ -61,25 +61,25 @@ Agent CodeWriter #1
         - time : calculé à partir d'un split de trans_date_trans_time (ou unix_time)
         - hour : calculé à partir d'un split de trans_date_trans_time (ou unix_time)
         - dow : day of week calculé à partir de unix time
-        - diff_avg_amt : différence entre le montant de la transaction et le montant moyen par client (vérifier si les clients uniques peuvent etre définis par la clé qui concatène id_client={last}_{first}_{gender}_{dob}_{zip}) - on sauvegardera dans work un fichier @work/client_trx_analysis.csv contenant les id_client, le montant moyen de leurs dépenses avg_mnt et la fréquence moyenne de leurs transactions (sur la durée totale du dataset)
+        - diff_avg_amt : différence entre le montant de la transaction et le montant moyen par client (vérifier si les clients uniques peuvent être définis par la clé qui concatène id_client={last}_{first}_{gender}_{dob}_{zip}) - on sauvegardera dans work un fichier @work/client_trx_analysis.csv contenant les id_client, le montant moyen de leurs dépenses avg_mnt et la fréquence moyenne de leurs transactions (sur la durée totale du dataset)
     - enlever les champs de data personnelles inutiles pour le training des modèles: 0, cc_num, first, last, street, dob
 - faire EDA simple notamment en calculant + affichage en log :
         - fréquence moyenne des transactions/client
         - liste des jours dow les plus probables
         - moyenne de distance_km (distance entre client et marchand)
 
-### 1.2 - Script d'entrainement
+### 1.2 - Script d'entraînement
 
 Agent CodeWriter #1
 
 - input :  @work/fraudTest_prepared.csv
 - output : 
     - en test : modèle sous forme pkl en local + base SQLite locale MLFlow
-    - en prod : modèle dans S3 de MLFlow + MLFLow v3.7.0 déployé sur HuggingFace
+    - en prod : modèle dans S3 de MLFlow + MLFlow v3.7.0 déployé sur HuggingFace
 
 ce script doit pouvoir
 - accepter une config yaml qui indique
-    - les modèles à tester avec éventuellement paramètres de modèle (un modèle peut apparaitre plusieurs fois mais avec des paramtères différents pour pouvoir tester plusieurs variantes):
+    - les modèles à tester avec éventuellement paramètres de modèle (un modèle peut apparaitre plusieurs fois mais avec des paramètres différents pour pouvoir tester plusieurs variantes):
         - LogisticRegression avec class_weight="balanced"
         - XGBoost avec scale_pos_weight
         - LightGBM avec is_unbalanced=True
@@ -87,19 +87,19 @@ ce script doit pouvoir
           assez d'exemples de fraude labellisés disponibles pour un classifieur supervisé — cf.
           CLAUDE.md pour le détail des modèles réellement actifs dans config/models.yaml)
     - le taux de train/test split
-    - ajouter ou non une politique de rééchantillonage étant donné que le dataset est déséquilibré
+    - ajouter ou non une politique de rééchantillonnage étant donné que le dataset est déséquilibré
         - sous-échantillonage : on supprime des exemples majoritaires jusqu'au taux souhaité pour les data minoritaires (RandomUnderSampler)
         - SMOTE : création artificielle de data minoritaires - configuration : sampling_strategy (ratio cible entre classe: 0.1 pour 10% de minoritaires, auto pour 50%/50%), k_neighbors nombre de voisins pour générer l'exemple (prendre k pas trop grand entre 3 et 5) et fixer le random_state
-- faire l'entrainement des modèles
+- faire l'entraînement des modèles
     - faire un train/test split selon la config
-    - appliquer la technique de rééchantillonage
+    - appliquer la technique de rééchantillonnage
     - évaluer les scores f1-score, recall, precision, accuracy, ROC-AUC, PR-AUC des modèles
     - logger les scores dans MLFlow v3.7.0 https://gviel-mlflow37.hf.space/#/ (prod uniquement —
       cf. note ci-dessous)
 - tagger les modèles avec des tags { env=prod|test, status=best|challenger|worst}; le meilleur sera taggé avec status=best, le pire avec status=worst et les autres en status=challenger
     - en prod : pousser le modèle vers le bucket S3 de MLFlow de prod
     - en test : sauver le modèle en local dans un répertoire model au format pkl, ET basculer
-      automatiquement le tracking MLFlow sur un store **SQLite local** (`work/mlflow_local.db`, jamais poussé nulle part) au lieu du serveur MLFLow hébergée `https://gviel-mlflow37.hf.space/`
+      automatiquement le tracking MLFlow sur un store **SQLite local** (`work/mlflow_local.db`, jamais poussé nulle part) au lieu du serveur MLFlow hébergée `https://gviel-mlflow37.hf.space/`
       partagée avec la prod — permet de s'entraîner/itérer en local (`make train ARGS="--env test"`) sans dépendre du réseau/des credentials du serveur MLFlow hébergé, et sans y
       accumuler de bruit : ces runs ne sont de toute façon jamais servis (pas de modèle poussé sur
       S3), les logguer dans l'historique partagé ne ferait qu'y ajouter du bruit de dev/itération
@@ -127,7 +127,7 @@ Agent CodeWriter #2
 Ce que doit faire notre API (FastAPI)
 - doit récupérer avec MLFlow client le meilleur modèle taggé avec status=best
     - en test : on charge le modèle sauvé en local au format pkl dans le répertoire model
-    - en prod : on charge le modèle à partir de MLFLow (bucket S3 de MLFlow)
+    - en prod : on charge le modèle à partir de MLFlow (bucket S3 de MLFlow)
 - doit charger le fichier client_trx_analysis.csv (stats par client pour la feature diff_avg_amt,
   cf. phase 1.1) au démarrage
     - en test : depuis work/client_trx_analysis.csv en local (produit par prepare_dataset.py)
@@ -136,10 +136,10 @@ Ce que doit faire notre API (FastAPI)
       avant de servir des prédictions
     - si le fichier est indisponible (client inconnu ou fichier manquant) : repli sur la moyenne
       globale, cf. phase 1.1
-- on pourra charger le modèle en asynchrone et renvoyé err 503 avec message d'erreur tant qu'il n'est pas prêt
+- on pourra charger le modèle en asynchrone et renvoyer err 503 avec message d'erreur tant qu'il n'est pas prêt
 - avoir un endpoint /predict qui fait la prédiction avec le modèle
     - input : une transaction
-    - output : indique si la transaction est une fraude ou pas + transaction elle-meme (id de la transaction : transac_num)
+    - output : indique si la transaction est une fraude ou pas + transaction elle-même (id de la transaction : trans_num)
 - avoir un endpoint /health qui indique le statut du service (ready/loading/error), l'environnement,
   le nom du modèle chargé et la version de l'API
 - avoir un endpoint POST /reload-model permettant de forcer le rechargement du modèle (depuis
@@ -155,7 +155,7 @@ Ce que doit faire notre API (FastAPI)
 
 ## Phase 3 : création d'un DAG Airflow
 
-### 3.1 - DAG ETL & Detection Fraud
+### 3.1 - DAG ETL & Fraud Detection
 
 Implémentation : `dag_id="dag_etl_fraud_detection"` (`dags/dag_realtime.py`), schedule piloté par la variable d'env `DAG_ETL_FRAUD_DETECTION_CRON` (expression cron, défaut `* * * * *` — toutes les minutes).
 
@@ -165,7 +165,7 @@ Objectif : collecter les nouvelles transaction, les stocker, faire la détection
 
 - task fetch_trx : phase collecte
     - schedule : s'exécute toutes les X minutes (paramétrable dans Airflow?) sauf si le DAG n'est pas terminé
-    - appel realtime API pour récupèrer la dernière transaction
+    - appel realtime API pour récupérer la dernière transaction
     - output : une transaction au format JSON
     - si OK va vers : store_trx
 - task store_trx : phase transformation et load (si la transaction en input est valide)
@@ -175,12 +175,12 @@ Objectif : collecter les nouvelles transaction, les stocker, faire la détection
     - en test :
         - on la stocke dans un répertoire work/yyyyMMdd/trx-{yyyyMMdd_HHmmss}_{trans_num}.json
         - on la stocke 
-            - en test : dans unee bdd PgSQL lancée en local dans un conteneur docker
+            - en test : dans une bdd PgSQL lancée en local dans un conteneur docker
             - en prod : dans une base PgSQL Neon distante
     - input : une transaction en JSON
     - output : une transaction en JSON si elle est valide (champs présent, non null)
     - si OK va vers : fraud_detect
--  task fraud_detect :
+- task fraud_detect :
     - fait un appel à l'API de prédiction de fraude en lui envoyant la transaction reçue par store_trx.py et sauve la prédiction en base de données PgSQL fraud-detection-db (en prod : sur Neon, en test : dans un bdd pgsql locale sur docker)
     - input : transaction en JSON
     - output : prédiction si fraude ou non + la transaction
@@ -188,7 +188,7 @@ Objectif : collecter les nouvelles transaction, les stocker, faire la détection
         - si la transaction est une fraude >0.7 :
             - sauver en bdd pgsql fraud-detection-db le résultat de la prédiction pour la transaction
             - puis passe à la task suivante du DAG -> send_fraud_alert_email
-        - sinon on s'arrete
+        - sinon on s'arrête
 - task send_fraud_alert_email :
     - input : transaction + prédiction de fraude
     - output : envoi d'un email (configurable) indiquant que la transaction est une fraude à x% (valeur de prédiction)
@@ -229,11 +229,11 @@ Implémentation : `dag_id="dag_report"` (`dags/dag_daily_report.py`), schedule p
 
 Agent CodeWriter #4
 
-Ojectif: générer un rapport de fraude régulièrement et l'envoyer par email.
+Objectif: générer un rapport de fraude régulièrement et l'envoyer par email.
 
 - schedule : s'exécute toutes les N heures pour générer un rapport de fraudes
 - task daily_report :
-    - va chercher dans la base de données pgsql fraud-detection-db toutes les trx avec date entre now-N heures et now et génére un rapport indiquant le taux de trx frauduleuses
+    - va chercher dans la base de données pgsql fraud-detection-db toutes les trx avec date entre now-N heures et now et génère un rapport indiquant le taux de trx frauduleuses
 - si task daily_report ok -> task send_email_report : envoie le rapport par email (configurable)
 
 - synopsis DAG : 
@@ -245,7 +245,7 @@ Implémentation : `dag_id="dag_train_model"` (`dags/dag_train_model.py`), schedu
 
 Agent CodeWriter #1
 
-Objectif: déployer et exécuter de façon ponctuelle l'entrainement de plusieurs modèles.
+Objectif: déployer et exécuter de façon ponctuelle l'entraînement de plusieurs modèles.
 
 - schedule : à exécuter toute les x minutes (schedule_interval=60min par défaut)
 - en test comme en prod : @data/fraudTest.csv, @work/fraudTest.csv et @work/fraudTest_prepared.csv
@@ -287,7 +287,7 @@ Objectif: déployer et exécuter de façon ponctuelle l'entrainement de plusieur
           est loggé mais ne fait pas échouer la task, l'entraînement ayant déjà réussi)
         - sinon -> ne rien déclencher, le modèle actuellement chargé par l'API reste le bon
 
-- sysnopsis DAG :
+- synopsis DAG :
     - start >> branch
     - branch >> copy_data >> prepare >> train
     - branch >> prepare
@@ -309,7 +309,7 @@ Répertoire @work est le répertoire de travail pour stocker et manipuler des fi
     - tests unitaires des scripts : pytest dans @tests
     - tests des scripts dans un conteneur docker (dans un répertoire scripts ou tools mettre les scripts qui permettent de kill, rebuild et démarrer le conteneur, suivre les logs, lancer manuellement les scripts prepare_dataset.py et train.py)
 - tests phase 2 :
-    - déploy de l'API avec Docker dans un conteneur (faire apparaitre 'test' dans le nom du conteneur)
+    - déploiement de l'API avec Docker dans un conteneur (faire apparaitre 'test' dans le nom du conteneur)
 - tests phase 3 :
     - tests unitaires des scripts pour les DAG (à implémenter plus tard)
 
@@ -318,11 +318,11 @@ Répertoire @work est le répertoire de travail pour stocker et manipuler des fi
 Répertoire @work est le répertoire de travail pour stocker et manipuler des fichiers
 
 - si les tests unitaires sont OK 
-    - deploy stack local Airflow 3.2.2 avec Docker LocalExecutor + un requirements.txt spécifique selon les besoins des DAGs avec les composants suivants :
+    - déploiement de la stack Airflow 3.2.2 locale avec Docker LocalExecutor + un requirements.txt spécifique selon les besoins des DAGs avec les composants suivants :
         - composants Airflow de base (init, apiserver, triggerer, dag processor)
-        - bdd pgsql pour stockage des transactions realtime collectées par le DAG ETL & Detection Fraud
-        - API fraud-detection pour les prédictions (faire apparaitre 'cicd' dans le nom du contenan)
-        - pour le DAT Model Training les scripts seront exécutés en subprocess dans Airflow (pas de déport Docker dans un conteneur Docker car trop complexe)
+        - bdd pgsql pour stockage des transactions realtime collectées par le DAG ETL & Fraud Detection
+        - API fraud-detection pour les prédictions (faire apparaitre 'cicd' dans le nom du conteneur)
+        - pour le DAG Model Training les scripts seront exécutés en subprocess dans Airflow (pas de déport Docker dans un conteneur Docker car trop complexe)
     - si la stack est déployée correctement sans erreur, lancer les tests d'intégration dessus pour tout tester de bout en bout
 
 ---
@@ -364,9 +364,9 @@ Définition de la stack à déployer :
                 - Neon DB fraud-detection-db
                 - SMTP Gmail
                 - (en option pour plus tard: bucket S3 bucket-fraud-detection-gviel pour stocker un rapport PDF)
-            - DAG Model Training interragit avec:
-                - MLFLow + S3 aws-s3-mlflow de MLFlow (pour déposer le modèle)
-                - buket S3 bucket-fraud-detection-gviel : @data/fraudTest.csv et @work/fraudTest.csv
+            - DAG Model Training interagit avec:
+                - MLFlow + S3 aws-s3-mlflow de MLFlow (pour déposer le modèle)
+                - bucket S3 bucket-fraud-detection-gviel : @data/fraudTest.csv et @work/fraudTest.csv
                   restent des fichiers LOCAUX en permanence (test comme prod, cf. phase 3.3 — la
                   synchronisation de work/fraudTest.csv se fait ailleurs, cf. DAG ETL & Fraud
                   Detection ci-dessus, pas ici). La task train (en prod uniquement, une fois
@@ -383,14 +383,14 @@ Définition de la stack à déployer :
 ## Phase 6 : création d'un dashboard de suivi
 
 ### 6.1 - Créer un dashboard streamlit permettant de
-- voir les dernières transactions collectée sur la journée par le système (la dernière en premier) : les transactions doivent donc avoir un timestamp d'écriture en bdd (à vérifier dans le DAG ETL & Fraud detection)
+- voir les dernières transactions collectées sur la journée par le système (la dernière en premier) : les transactions doivent donc avoir un timestamp d'écriture en bdd (à vérifier dans le DAG ETL & Fraud Detection)
 - on doit voir le score de fraude et il faudra indiquer avec légende
     - en rouge les fraudes > 0.9
-    - en orange les fraudes >0.7 et <=0.9>
+    - en orange les fraudes >0.7 et <=0.9
     - en jaune les fraudes entre 0.5 et 0.7
     - en vert les fraudes <=0.5
 - on doit pouvoir filtrer pour d'autres jour que la journée courante et filtrer les transactions par niveau de fraude ou toutes les fraudes
-- on devra indiquer la version de l'API  + modèle et technique utilisée (si info facilement disponible : abandonner si trop complexe)
+- on devra indiquer la version de l'API + modèle et technique utilisée (si info facilement disponible : abandonner si trop complexe)
 
 ### 6.2 - Déploiement du dashboard
 
