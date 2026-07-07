@@ -33,11 +33,11 @@ api/app.py (FastAPI)      ──►  charge le modèle status=best depuis MLFlow
                                POST /predict, GET /health, POST /reload-model
 
 dags/ (Airflow, local)     ── 3 DAGs :
-   • fraud_detection_realtime   : 1×/min — collecte une transaction (API Jedha), la fait scorer
+   • dag_etl_fraud_detection : 1×/min — collecte une transaction (API Jedha), la fait scorer
                                   par l'API, alerte par email si fraude, écrit en base PostgreSQL
                                   (Neon en prod) et sur S3, et enrichit le dataset d'entraînement
-   • fraud_detection_daily_report : rapport quotidien par email
-   • fraud_detection_train_model  : ré-entraîne le modèle quand le dataset a grossi, redéploie
+   • dag_report               : rapport de fraudes par email
+   • dag_train_model          : ré-entraîne le modèle quand le dataset a grossi, redéploie
                                   automatiquement le nouveau modèle si c'est le meilleur global
 
 dashboard/app.py (Streamlit)  ──► visualise les transactions de real_time_transactions (Neon)

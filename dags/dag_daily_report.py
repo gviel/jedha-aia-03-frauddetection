@@ -1,8 +1,9 @@
 """
-DAG Airflow — Rapport de fraudes toutes les N heures.
+DAG Airflow — Rapport de fraudes, planifié par DAG_REPORT_CRON.
 
-Interroge la base de données, calcule les statistiques de fraude
-sur la période configurée (REPORT_LOOKBACK_HOURS), et envoie le rapport par email.
+Interroge la base de données, calcule les statistiques de fraude depuis la
+dernière exécution planifiée (déduite de DAG_REPORT_CRON via croniter), et
+envoie le rapport par email.
 """
 import json
 import os
@@ -22,7 +23,7 @@ SMTP_HOST             = Variable.get("SMTP_HOST",              default_var=os.ge
 SMTP_PORT             = int(Variable.get("SMTP_PORT",          default_var=os.getenv("SMTP_PORT",              "587")))
 SMTP_USER             = Variable.get("SMTP_USER",              default_var=os.getenv("SMTP_USER",              ""))
 SMTP_PASSWORD         = Variable.get("SMTP_PASSWORD",          default_var=os.getenv("SMTP_PASSWORD",          ""))
-REPORT_LOOKBACK_HOURS = int(Variable.get("REPORT_LOOKBACK_HOURS", default_var=os.getenv("REPORT_LOOKBACK_HOURS", "24")))
+DAG_REPORT_CRON       = Variable.get("DAG_REPORT_CRON",        default_var=os.getenv("DAG_REPORT_CRON",        "0 0 * * *"))
 
 default_args = {
     "owner":       "fraud_detection",
@@ -36,9 +37,11 @@ default_args = {
 def gen_daily_report(**context):
     """Génère et envoie le rapport de fraudes pour la période écoulée."""
     import psycopg2
+    from croniter import croniter
 
     now   = datetime.utcnow()
-    since = now - timedelta(hours=REPORT_LOOKBACK_HOURS)
+    since = croniter(DAG_REPORT_CRON, now).get_prev(datetime)
+    lookback_hours = round((now - since).total_seconds() / 3600, 2)
 
     conn = psycopg2.connect(DATABASE_URL)
     with conn.cursor() as cur:
@@ -76,7 +79,7 @@ def gen_daily_report(**context):
     report = {
         "period_start":             since.isoformat(),
         "period_end":               now.isoformat(),
-        "lookback_hours":           REPORT_LOOKBACK_HOURS,
+        "lookback_hours":           lookback_hours,
         "total_transactions":       int(total),
         "frauds_detected":          int(frauds),
         "fraud_rate_pct":           round(fraud_rate, 3),
@@ -129,12 +132,10 @@ def gen_daily_report(**context):
 
 # ── DAG ───────────────────────────────────────────────────────────────────────
 
-_schedule = f"0 */{max(1, REPORT_LOOKBACK_HOURS)} * * *"  # toutes les N heures
-
 with DAG(
-    dag_id="fraud_detection_daily_report",
-    description=f"Rapport de fraudes toutes les {REPORT_LOOKBACK_HOURS} heures",
-    schedule=_schedule,
+    dag_id="dag_report",
+    description="Rapport de fraudes (fréquence : DAG_REPORT_CRON)",
+    schedule=DAG_REPORT_CRON,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

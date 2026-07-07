@@ -13,6 +13,7 @@ from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 
+from config import DAG_ETL_FRAUD_DETECTION_CRON
 from tasks.augment_training_data import augment_training_data
 from tasks.fetch_trx import fetch_trx
 from tasks.fraud_detect import fraud_detect
@@ -26,9 +27,9 @@ default_args = {
 }
 
 with DAG(
-    dag_id="fraud_detection_realtime",
+    dag_id="dag_etl_fraud_detection",
     description="Collecte et analyse temps réel des transactions Jedha",
-    schedule=timedelta(minutes=1),
+    schedule=DAG_ETL_FRAUD_DETECTION_CRON,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

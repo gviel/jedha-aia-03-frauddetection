@@ -157,6 +157,8 @@ Ce que doit faire notre API (FastAPI)
 
 ### 3.1 - DAG ETL & Detection Fraud
 
+Implémentation : `dag_id="dag_etl_fraud_detection"` (`dags/dag_realtime.py`), schedule piloté par la variable d'env `DAG_ETL_FRAUD_DETECTION_CRON` (expression cron, défaut `* * * * *` — toutes les minutes).
+
 Agent CodeWriter #3
 
 Objectif : collecter les nouvelles transaction, les stocker, faire la détection de fraude et alerter par email.
@@ -223,6 +225,8 @@ Objectif : collecter les nouvelles transaction, les stocker, faire la détection
 
 ### 3.2 - DAG Fraud Report
 
+Implémentation : `dag_id="dag_report"` (`dags/dag_daily_report.py`), schedule piloté par la variable d'env `DAG_REPORT_CRON` (expression cron, défaut `0 0 * * *` — tous les jours à minuit) — la fenêtre de lookback du rapport est dérivée de cette même expression via `croniter`, pas une variable séparée.
+
 Agent CodeWriter #4
 
 Ojectif: générer un rapport de fraude régulièrement et l'envoyer par email.
@@ -236,6 +240,8 @@ Ojectif: générer un rapport de fraude régulièrement et l'envoyer par email.
     - daily_report >> send_email_report
 
 ### 3.3 - DAG Model Training
+
+Implémentation : `dag_id="dag_train_model"` (`dags/dag_train_model.py`), schedule piloté par la variable d'env `DAG_TRAIN_CRON` (expression cron, défaut `0 * * * *` — toutes les heures).
 
 Agent CodeWriter #1
 

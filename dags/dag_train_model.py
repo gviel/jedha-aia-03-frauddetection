@@ -18,7 +18,7 @@ from airflow import DAG
 from airflow.providers.standard.operators.empty import EmptyOperator
 from airflow.providers.standard.operators.python import BranchPythonOperator, PythonOperator
 
-from config import TRAIN_SCHEDULE_MINUTES
+from config import DAG_TRAIN_CRON
 from tasks.train_model import branch_train, copy_data, prepare, train
 
 default_args = {
@@ -28,9 +28,9 @@ default_args = {
 }
 
 with DAG(
-    dag_id="fraud_detection_train_model",
+    dag_id="dag_train_model",
     description="Réentraîne les modèles (subprocess) si de nouvelles données sont disponibles",
-    schedule=timedelta(minutes=TRAIN_SCHEDULE_MINUTES),
+    schedule=DAG_TRAIN_CRON,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

@@ -2,7 +2,7 @@
 # Stack Airflow dédiée au projet Fraud Detection
 # Airflow 3.2.2 — LocalExecutor — auto-contenu (Airflow DB + Fraud DB + API)
 #
-# Le DAG 3.3 (fraud_detection_train_model) exécute prepare_dataset.py/train.py en
+# Le DAG 3.3 (dag_train_model) exécute prepare_dataset.py/train.py en
 # subprocess directement dans ce conteneur (specs.md Phase 4 : "pas de déport
 # Docker dans un conteneur Docker car trop complexe") — image custom construite
 # par airflow/Dockerfile (ajoute libgomp1 + les deps ML de src/requirements.txt
@@ -41,13 +41,14 @@ x-airflow-common:
     APP_ENV: "${APP_ENV:-test}"
     FRAUD_API_URL: "http://fraud-detection-api:8000"
     FRAUD_THRESHOLD: "0.7"
+    DAG_ETL_FRAUD_DETECTION_CRON: "${DAG_ETL_FRAUD_DETECTION_CRON:-* * * * *}"
     DATABASE_URL: "${DATABASE_URL:-postgresql://fraud:fraud@fraud-db:5432/fraud}"
     # store_trx.py (APP_ENV=prod) uploade vers S3 au lieu du fichier local — vides en mode test
     AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
     AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
     AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-eu-west-3}"
     WORK_DIR: "/opt/airflow/work"
-    REPORT_LOOKBACK_HOURS: "24"
+    DAG_REPORT_CRON: "${DAG_REPORT_CRON:-0 0 * * *}"
     # Alerte fraude (send_fraud_alert_email) + rapport quotidien (gen_daily_report) —
     # indépendant de APP_ENV, propagé dans les deux modes (test/prod)
     SMTP_HOST: "${SMTP_HOST:-smtp.gmail.com}"
@@ -60,7 +61,7 @@ x-airflow-common:
     MODEL_RELOAD_TOKEN: "${MODEL_RELOAD_TOKEN:-}"
     # DAG 3.3 (entraînement) — vérification du changement de données + subprocess
     DATA_PATH: "/opt/airflow/data/fraudTest.csv"
-    TRAIN_SCHEDULE_MINUTES: "60"
+    DAG_TRAIN_CRON: "${DAG_TRAIN_CRON:-0 * * * *}"
     SRC_DIR: "/opt/airflow/src"
     PROJECT_CONFIG_PATH: "/opt/airflow/project_config/models.yaml"
   volumes:
