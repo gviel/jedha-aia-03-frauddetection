@@ -34,9 +34,20 @@ api-venv: api/requirements.txt
 api: api-venv
 	$(VENV)-api/bin/uvicorn api.app:app --host 0.0.0.0 --port 8000 --reload
 
+# ── Airflow (pause/relance des DAGs sur la stack en cours) ─────────────────────
+
+dag-status:
+	airflow/dag_toggle.sh status $(DAG)
+
+dag-pause:
+	airflow/dag_toggle.sh pause $(DAG)
+
+dag-unpause:
+	airflow/dag_toggle.sh unpause $(DAG)
+
 # ── Utilitaires ────────────────────────────────────────────────────────────────
 
 clean:
 	rm -rf $(VENV) $(VENV)-api work/logs work/fraudTest_prepared.csv work/[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]
 
-.PHONY: venv prepare train test api-venv api clean
+.PHONY: venv prepare train test api-venv api clean dag-status dag-pause dag-unpause
