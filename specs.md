@@ -338,7 +338,9 @@ Agent : Devops engineer #1
   `https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/`
 - BDD PgSQL (Neon, projet `fraud-detection-db`) : chaîne de connexion dans `DATABASE_URL`
   (`airflow/.env.production`/`dashboard/.env.production`, non commités)
-- Airflow UI (stack docker locale) : `http://localhost:8080/dags/`
+- Airflow UI (stack docker locale) : `http://localhost:8082/dags/` (port hôte 8082, remappé
+  depuis 8080 le 2026-07-12 pour éviter un conflit avec d'autres stacks Airflow locales sur cette
+  même machine — le port interne au conteneur reste 8080)
 - Bucket AWS S3 : `s3://bucket-fraud-detection-gviel` ou `https://s3.console.aws.amazon.com/s3/buckets/bucket-fraud-detection-gviel?region=eu-west-3&tab=objects`
 
 Définition de la stack à déployer :

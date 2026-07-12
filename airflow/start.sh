@@ -12,6 +12,7 @@ else
 fi
 
 export AIRFLOW_UID=$(id -u)
+export COMPOSE_PROJECT_NAME=fraud-detection
 
 # Un seul fichier .env choisi entièrement selon APP_ENV (airflow/.env.test ou
 # airflow/.env.production — mêmes clés des deux côtés, cf. airflow/.env.template) : pas de
@@ -24,6 +25,9 @@ if [ "$APP_ENV" = "prod" ]; then
     ENV_FILE=".env.production"
 else
     ENV_FILE=".env.test"
+    # Profil Compose "test" : n'active fraud-db (Postgres local) qu'en mode test — en prod,
+    # DATABASE_URL pointe vers Neon, ce conteneur ne sert à rien (cf. docker-compose.yml).
+    export COMPOSE_PROFILES=test
 fi
 if [ ! -f "$ENV_FILE" ]; then
     echo "ERREUR : airflow/$ENV_FILE introuvable (copier airflow/.env.template)." >&2
@@ -64,8 +68,8 @@ echo "--- Démarrage des services ---"
 echo ""
 echo "--- Attente du démarrage de l'API server ---"
 for i in $(seq 1 20); do
-    if curl -sf http://localhost:8080/api/v2/version >/dev/null 2>&1; then
-        echo "✓ Airflow UI prête : http://localhost:8080  (airflow / airflow)"
+    if curl -sf http://localhost:8082/api/v2/version >/dev/null 2>&1; then
+        echo "✓ Airflow UI prête : http://localhost:8082  (airflow / airflow)"
         break
     fi
     printf "."

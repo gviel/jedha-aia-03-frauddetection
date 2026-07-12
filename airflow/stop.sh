@@ -10,6 +10,11 @@ else
     DOCKER_COMPOSE=(docker-compose)
 fi
 
+export COMPOSE_PROJECT_NAME=fraud-detection
+# Toujours inclure le profil "test" ici (que la stack ait été démarrée en test ou en prod) :
+# down/rm doit pouvoir nettoyer fraud-db s'il existe, sans se soucier du mode utilisé au start.
+export COMPOSE_PROFILES=test
+
 echo "=== Arrêt de la stack Fraud Detection Airflow ==="
 
 if [[ "${1:-}" == "--clean" ]]; then

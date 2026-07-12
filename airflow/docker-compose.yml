@@ -12,6 +12,12 @@
 # Logs Airflow : airflow/logs/
 # Transactions stockées : work/<YYYYMMDD>/
 
+# Nom de projet fixé via COMPOSE_PROJECT_NAME (exporté par start.sh/stop.sh), pas via la clé
+# top-level `name:` — non supportée par docker-compose v1.29.2 (`'name' does not match any of
+# the regexes: '^x-'`), seule version disponible tant que le plugin `docker compose` v2 n'est
+# pas installé. Sinon le nom de projet est déduit du répertoire "airflow/", d'où le double
+# préfixe historique "airflow_airflow-scheduler_1".
+
 x-airflow-common:
   &airflow-common
   image: fraud-detection-airflow:latest
@@ -107,6 +113,10 @@ services:
     restart: always
 
   fraud-db:
+    # Uniquement utile en APP_ENV=test (DATABASE_URL pointe vers Neon en prod, cf. commentaire
+    # plus haut) — profil "test" activé par start.sh (COMPOSE_PROFILES=test) uniquement dans ce
+    # mode, pour ne pas démarrer ce conteneur inutilement en prod.
+    profiles: ["test"]
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: fraud
@@ -122,12 +132,17 @@ services:
     restart: always
 
   # ── API de prédiction ─────────────────────────────────────────────────────────
+  # Conteneur de test local uniquement (MODEL_ENV fixé à "test" ci-dessous) — la vraie prod
+  # tourne sur Render (cf. FRAUD_API_URL dans airflow/.env.production, qui pointe déjà vers
+  # l'URL Render et non ce conteneur), d'où le profil "test" (mêmes conditions que fraud-db/
+  # dashboard ci-dessus).
 
   fraud-detection-api:
+    profiles: ["test"]
     build:
       context: ..
       dockerfile: api/Dockerfile
-    container_name: fraud_detection_api_cicd
+    container_name: fraud_detection_api_test
     environment:
       MODEL_ENV: "test"
       MODEL_PATH: "model/best_model.pkl"
@@ -148,11 +163,14 @@ services:
     restart: always
 
   # ── Dashboard de suivi (specs.md Phase 6) ─────────────────────────────────────
-  # Déploiement test uniquement (Docker) — pas de déploiement Streamlit Cloud (prod, plus tard).
+  # Ce conteneur ne sert qu'à tester dashboard/app.py en local dans Docker — la vraie prod
+  # tourne sur Streamlit Community Cloud (déployée le 2026-07-06, cf. CLAUDE.md Phase 6),
+  # d'où le profil "test" (mêmes conditions que fraud-db ci-dessus).
   # Rejoint fraud-db et fraud-detection-api via le réseau Docker interne (pas de port exposé
   # pour ces deux-là), comme fraud-detection-api déjà co-localisé ici pour la même raison.
 
   dashboard:
+    profiles: ["test"]
     build:
       context: ..
       dockerfile: dashboard/Dockerfile
@@ -167,6 +185,7 @@ services:
     depends_on:
       fraud-db:
         condition: service_healthy
+        required: false  # fraud-db absent en prod (profil "test" non actif), ne doit pas bloquer
     restart: always
 
   # ── Airflow ───────────────────────────────────────────────────────────────────
@@ -175,7 +194,7 @@ services:
     <<: *airflow-common
     command: api-server
     ports:
-      - "8080:8080"
+      - "8082:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/version"]
       interval: 30s
