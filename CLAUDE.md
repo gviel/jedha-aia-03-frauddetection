@@ -4,7 +4,7 @@
 
 Certification Jedha RNCP7 Bloc 3 AIA : pipeline ML de détection de fraude en production.
 Specs : `specs.md` — source de vérité unique pour toutes les phases.
-Bugs rencontrés + solutions (détail) : `docs/troubleshooting.md`.
+Bugs rencontrés + solutions (détail) : `docs/travail/troubleshooting.md`.
 
 ## Infrastructure
 
@@ -186,49 +186,10 @@ initialisé — pas de copy_data fait, cf. `dags/tasks/augment_training_data.py`
 - **`api/Dockerfile` installe aussi `curl`** (en plus de `libgomp1`) — requis par le
   `healthcheck` Docker (`docker-compose.yml`), absent de `python:3.12-slim`.
 
-## Gotchas stack Airflow (trouvés en démarrant `./airflow/start.sh` pour de vrai)
+## Gotchas stack Airflow
 
-Ces bugs n'existaient pas dans le code applicatif — ils viennent tous du fait que la stack
-Airflow (`airflow/docker-compose.yml`) n'avait jamais été réellement démarrée avant. Tous corrigés :
-
-- **`airflow-init` (migration DB) plantait en `ModuleNotFoundError: No module named 'airflow'`** :
-  son `entrypoint: /bin/bash` court-circuite le script officiel de l'image qui configure
-  `PYTHONPATH` pour le pip install `--user` d'Airflow. Combiné à `user: "0:0"` (HOME=/root),
-  `airflow` ne se retrouvait plus lui-même. Fix : `HOME: /home/airflow` forcé dans
-  l'environnement d'`airflow-init`.
-- **Toutes les tâches échouaient en `Invalid auth token: Signature verification failed`** :
-  Airflow 3.x signe les JWT échangés entre le scheduler (émetteur) et l'apiserver (vérificateur,
-  execution API) avec `[api_auth] jwt_secret`. Non défini, chaque conteneur génère sa propre
-  clé aléatoire → les tokens ne se valident jamais entre conteneurs différents. Fix :
-  `AIRFLOW__API_AUTH__JWT_SECRET` fixé et identique sur tous les composants Airflow dans
-  `airflow-common-env`. (Attention à ne pas confondre avec `[api] secret_key` — mauvaise piste
-  suivie une première fois, sans effet.)
-- **`fetch_trx.py` : double encodage JSON** — l'API Jedha renvoie une chaîne JSON (donc
-  `resp.json()` donne déjà le texte JSON, pas un dict) ; le code faisait `json.dumps(resp.json())`
-  qui ré-échappait cette chaîne, cassant `pd.read_json(..., orient="split")` en aval
-  (`AttributeError: 'str' object has no attribute 'items'`). Fix : passer `resp.json()`
-  directement à `pd.read_json`.
-- **`fetch_trx.py` : `current_time` devenait un `pd.Timestamp`** — `pd.read_json` détecte
-  automatiquement les colonnes au nom évocateur d'une date et les convertit, cassant la
-  sérialisation JSON du XCom (`current_time` doit rester un entier epoch ms, comme attendu par
-  `store_trx.py` et `api/schemas.py`). Fix : `pd.read_json(..., convert_dates=False)`.
-- **docker-compose v1.29.2 (vs `docker compose` v2)** : `start.sh`/`stop.sh` détectent
-  automatiquement lequel est disponible. Sur `docker-compose` v1 avec un daemon Docker récent,
-  `--force-recreate` et `up` sur un conteneur au nom déjà pris (même arrêté) déclenchent des
-  bugs internes (`KeyError: 'id'`, `KeyError: 'ContainerConfig'`) — si ça arrive, `docker rm -f`
-  le(s) conteneur(s) concerné(s) puis relancer `up` (sans `--force-recreate`) plutôt que
-  d'insister sur la recréation en place.
-- **`model/best_model.pkl` jamais mis à jour par le DAG 3.3 en mode test** (trouvé le
-  2026-07-06, après plusieurs cycles d'entraînement qui semblaient "fonctionner") : le service
-  `airflow-scheduler` ne montait pas `../model`, alors que `train.py --env test` sauvegarde
-  toujours dans `MODEL_DIR = Path("model")` (chemin relatif, résolu à `/opt/airflow/model` —
-  cwd du conteneur). Ce répertoire était donc **local et éphémère au conteneur scheduler**,
-  jamais partagé avec l'hôte ni avec `fraud-detection-api` (qui monte `../model:/app/model:ro`
-  depuis l'hôte). Le modèle entraîné n'atteignait donc jamais l'API — `/reload-model` semblait
-  fonctionner (200 OK) mais rechargeait toujours l'ancien fichier hôte, inchangé depuis le
-  4 juillet. Fix : ajout de `../model:/opt/airflow/model` aux volumes de `airflow-common` dans
-  `airflow/docker-compose.yml`, vérifié en confirmant le mtime du fichier hôte après un run réel
-  du DAG 3.3 et un reload API reflétant bien le nouveau modèle.
+Pièges/gotchas rencontrés en conditions réelles (stack Airflow, docker compose, DAGs) : voir
+`docs/travail/troubleshooting.md`, sections "Stack Airflow" et "DAG temps réel".
 
 ## État des phases
 
