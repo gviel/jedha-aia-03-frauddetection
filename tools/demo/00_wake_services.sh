@@ -9,6 +9,10 @@ set -uo pipefail
 MLFLOW_URI="${MLFLOW_URI:-https://gviel-mlflow37.hf.space/}"
 JEDHA_API_URL="${JEDHA_API_URL:-https://sdacelo-real-time-fraud-detection.hf.space/current-transactions}"
 FRAUD_API_URL="${FRAUD_API_URL:-https://jedha-aia-03-frauddetection.onrender.com}"
+# Pas de ping automatique pour Streamlit Community Cloud : testé en réel, un GET boucle
+# indéfiniment sur une redirection 303 vers l'auth share.streamlit.io (num_redirects=50 avec
+# -L) sans jamais réveiller l'app — seul un clic navigateur sur "Yes, get this app back up!"
+# fonctionne.
 STREAMLIT_URL="${STREAMLIT_URL:-https://jedha-aia-03-frauddetection-vs7adfbiy54amcv5jqy3gc.streamlit.app/}"
 
 MAX_WAIT="${MAX_WAIT:-90}"
@@ -61,14 +65,13 @@ echo
 
 wake_http "MLflow"        "$MLFLOW_URI"     "$WORK_DIR/mlflow"   &
 wake_http "API Jedha"     "$JEDHA_API_URL"  "$WORK_DIR/jedha"    &
-wake_http "Streamlit"     "$STREAMLIT_URL"  "$WORK_DIR/streamlit" &
 wake_render_api "$WORK_DIR/render" &
 
 wait
 
 echo
 echo "=== Résumé ==="
-for entry in "MLflow:mlflow" "API Jedha:jedha" "API Render:render" "Streamlit:streamlit"; do
+for entry in "MLflow:mlflow" "API Jedha:jedha" "API Render:render"; do
     name="${entry%%:*}"
     file="${entry##*:}"
     result="$(cat "$WORK_DIR/$file" 2>/dev/null || echo "ko")"
@@ -80,6 +83,6 @@ for entry in "MLflow:mlflow" "API Jedha:jedha" "API Render:render" "Streamlit:st
 done
 
 echo
-echo "⚠️  Streamlit Community Cloud : un GET peut ne pas suffire à réveiller complètement"
-echo "   l'app si elle affiche l'écran de veille (bouton \"Yes, get this app back up!\")."
-echo "   Vérifier manuellement dans le navigateur avant l'enregistrement : $STREAMLIT_URL"
+echo "⚠️  Streamlit Community Cloud n'est pas réveillé automatiquement (impossible via curl,"
+echo "   boucle de redirection vers l'auth share.streamlit.io). À réveiller manuellement dans"
+echo "   le navigateur (bouton \"Yes, get this app back up!\") avant l'enregistrement : $STREAMLIT_URL"
