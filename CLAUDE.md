@@ -90,33 +90,9 @@ run (vérifié : sur l'historique réel du projet, un run plus ancien avec pr_au
 supérieur au dernier run pr_auc=0.799, donc pas de reload). Best-effort dans tous les cas (une
 erreur de reload est loggée mais ne fait pas échouer la tâche, l'entraînement ayant déjà réussi).
 
-⚠️ **Piège découvert en déployant sur Render (2026-07-06)** : la sélection par pr_auc maximum
-parmi tous les runs `status=best` ne garantit **ni** la fraîcheur **ni** la compatibilité de
-schéma avec le code d'inférence actuel. En ajoutant `zip` aux features catégorielles
-(`CAT_FEATURES`, cf. ci-dessous), un run plus ancien (pr_auc=0.8907, sans encoder `zip`) restait
-mieux classé qu'un nouveau run compatible (pr_auc=0.8875) — l'API chargeait donc un modèle
-incompatible avec son propre code, crash `ValueError: pandas dtypes must be int, float or bool`
-sur `zip`. **Chaque run d'entraînement de CE projet (test ou prod, tout au long des sessions de
-debug) tague toujours son propre meilleur modèle `status=best`, sans jamais comparer aux runs
-historiques ni les retaguer** — les runs `best` s'accumulent indéfiniment (30 dans l'historique
-réel à ce jour) et un changement de schéma de features peut rendre les runs anciens invalides
-tout en les laissant sélectionnables. Pas de garde-fou automatique dans le code contre ce cas :
-si le schéma de features change, il faut retaguer manuellement (`status=superseded` par ex.) les
-runs `best` devenus incompatibles avec un pr_auc supérieur, sans quoi ils resteront chargés.
-
-**Récidive du même piège (2026-07-06, sans changement de schéma cette fois)** : le DAG 3.3 local
-tournait en continu pendant une session de debug (avant le fix ci-dessus routant `--env test` vers
-un store MLFlow local) — un de ces runs `env=test` (jamais d'artefact S3, cf. `src/train.py`) a
-obtenu un pr_auc (0.8892) supérieur au vrai run prod (`fbbbb945…`, pr_auc=0.8875) et est devenu le
-run `status=best` sélectionné, faisant échouer le chargement du modèle sur Render
-(`model_loaded=false`, `Failed to download artifacts from path 'model'`) et affichant "Statut
-API: error" / "Modèle: ?" sur le dashboard Streamlit. Retagué manuellement en `status=superseded`
-(+ tag `superseded_reason`) pour que la sélection retombe sur le run prod valide, puis
-`POST /reload-model` déclenché sur Render pour forcer le rechargement sans redéploiement complet.
-Confirme que ce piège n'est pas spécifique à un changement de schéma : **tout** run `env=test`
-avec un pr_auc élevé peut temporairement dépasser le vrai meilleur run prod tant qu'il reste tagué
-`status=best` — le fix `--env test` → store local (ci-dessus) empêche que de *nouveaux* runs de ce
-type apparaissent dans l'historique partagé, mais ne nettoie pas les runs déjà présents avant le fix.
+⚠️ Piège de sélection du modèle en prod (runs `status=best` incompatibles ou issus de
+`env=test`) : voir `docs/travail/troubleshooting.md`, section "Sélection du modèle en production
+(MLFlow `status=best`)".
 
 ## Entraînement (`config/models.yaml`)
 
