@@ -1,8 +1,12 @@
 # Fraud Detection — Jedha RNCP7 AIA Bloc 3
 
+https://github.com/gviel/jedha-aia-03-frauddetection
+
 Pipeline ML de détection de fraude bancaire en production : préparation des données,
 entraînement/sélection de modèle, API de scoring temps réel, orchestration Airflow, et dashboard
-de suivi. Projet de certification Jedha RNCP7 Bloc 3 (Architecte IA).
+de suivi.
+
+Projet de certification Jedha RNCP7 Bloc 3 (Architecte IA).
 
 ## Voir le projet en marche
 
@@ -15,6 +19,8 @@ de suivi. Projet de certification Jedha RNCP7 Bloc 3 (Architecte IA).
 Le dashboard affiche les transactions temps réel collectées par le pipeline (score de fraude,
 filtres par jour/niveau de risque) ainsi que le statut de l'API/modèle en production. `/docs` sur
 l'API expose un Swagger avec des exemples pour tester `/predict` directement.
+
+[Vidéo de démo de l'architecture](https://youtu.be/8zfDwdCbX2Q)
 
 ## Fonctionnement (vue d'ensemble)
 
