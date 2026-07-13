@@ -10,6 +10,8 @@ Dépot GitHub : https://github.com/gviel/jedha-aia-03-frauddetection
 
 Présentation : `docs/AIA_bloc3_fraud_detection_GV.pptx`
 
+Vidéo de démo : https://youtu.be/8zfDwdCbX2Q
+
 
 ## Voir le projet en marche
 
