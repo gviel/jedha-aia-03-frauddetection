@@ -1,6 +1,7 @@
 # Données volumineuses
 data/fraudTest.csv
 data/fraudTest.ods
+*.mp4
 
 # Fichiers générés (préparation + modèles)
 work/
