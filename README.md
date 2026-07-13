@@ -24,37 +24,28 @@ l'API expose un Swagger avec des exemples pour tester `/predict` directement.
 
 ## Fonctionnement (vue d'ensemble)
 
-```
-data/fraudTest.csv                    dataset historique labellisé (entraînement)
-        │
-        ▼
-src/prepare_dataset.py   ──►  work/fraudTest_prepared.csv + work/client_trx_analysis.csv
-        │                     (feature engineering : distance_km, diff_avg_amt, hour, dow...)
-        ▼
-src/train.py             ──►  MLFlow (tracking + registry, S3 aws-s3-mlflow)
-                               5 modèles candidats (config/models.yaml), le meilleur taggé
-                               status=best sur PR-AUC
+| Étape | Composant | Rôle |
+|---|---|---|
+| 1 | `src/prepare_dataset.py` | `data/fraudTest.csv` (dataset historique labellisé) → `work/fraudTest_prepared.csv` + `work/client_trx_analysis.csv` (feature engineering : `distance_km`, `diff_avg_amt`, `hour`, `dow`...) |
+| 2 | `src/train.py` | Entraîne 5 modèles candidats (`config/models.yaml`), log tracking + registry dans MLFlow (artefacts sur S3 `aws-s3-mlflow`), tague le meilleur `status=best` sur PR-AUC |
+| 3 | `api/app.py` (FastAPI) | Charge le modèle `status=best` depuis MLFlow ; expose `POST /predict`, `GET /health`, `POST /reload-model` |
+| 4 | `dags/` (Airflow, local), 3 DAGs | `dag_etl_fraud_detection` (1×/min) : collecte une transaction (API Jedha), la fait scorer par l'API, alerte par email si fraude, écrit en base PostgreSQL (Neon en prod) et sur S3, enrichit le dataset d'entraînement · `dag_report` : rapport de fraudes par email · `dag_train_model` : ré-entraîne le modèle quand le dataset a grossi, redéploie automatiquement le nouveau modèle si c'est le meilleur au global |
+| 5 | `dashboard/app.py` (Streamlit) | Visualise les transactions de `real_time_transactions` (Neon) |
 
-api/app.py (FastAPI)      ──►  charge le modèle status=best depuis MLFlow
-                               POST /predict, GET /health, POST /reload-model
+![Architecture pipeline de production](docs/architecture_prod.drawio._fond_blanc_demo.png)
 
-dags/ (Airflow, local)     ── 3 DAGs :
-   • dag_etl_fraud_detection : 1×/min — collecte une transaction (API Jedha), la fait scorer
-                                  par l'API, alerte par email si fraude, écrit en base PostgreSQL
-                                  (Neon en prod) et sur S3, et enrichit le dataset d'entraînement
-   • dag_report               : rapport de fraudes par email
-   • dag_train_model          : ré-entraîne le modèle quand le dataset a grossi, redéploie
-                                  automatiquement le nouveau modèle si c'est le meilleur global
-
-dashboard/app.py (Streamlit)  ──► visualise les transactions de real_time_transactions (Neon)
-```
-
-Détails complets des choix d'architecture, des phases et des specs : voir `specs.md`.
 
 ## Stack technique
 
-Python 3.12 · scikit-learn / XGBoost / LightGBM · MLFlow · FastAPI · Apache Airflow 3.2 ·
-PostgreSQL (Neon en prod) · S3 (AWS) · Streamlit · Docker / Docker Compose
+- Python 3.12
+- scikit-learn / XGBoost / LightGBM
+- MLFlow
+- FastAPI
+- Apache Airflow 3.2
+- PostgreSQL (Neon en prod)
+- S3 (AWS)
+- Streamlit
+- Docker / Docker Compose
 
 ## Lancer le projet en local
 
