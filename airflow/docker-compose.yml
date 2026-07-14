@@ -110,7 +110,7 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
-    restart: always
+    restart: "no"
 
   fraud-db:
     # Uniquement utile en APP_ENV=test (DATABASE_URL pointe vers Neon en prod, cf. commentaire
@@ -129,7 +129,7 @@ services:
       interval: 10s
       retries: 5
       start_period: 5s
-    restart: always
+    restart: "no"
 
   # ── API de prédiction ─────────────────────────────────────────────────────────
   # Conteneur de test local uniquement (MODEL_ENV fixé à "test" ci-dessous) — la vraie prod
@@ -160,7 +160,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    restart: always
+    restart: "no"
 
   # ── Dashboard de suivi (specs.md Phase 6) ─────────────────────────────────────
   # Ce conteneur ne sert qu'à tester dashboard/app.py en local dans Docker — la vraie prod
@@ -186,7 +186,7 @@ services:
       fraud-db:
         condition: service_healthy
         required: false  # fraud-db absent en prod (profil "test" non actif), ne doit pas bloquer
-    restart: always
+    restart: "no"
 
   # ── Airflow ───────────────────────────────────────────────────────────────────
 
@@ -201,7 +201,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: "no"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -218,7 +218,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: "no"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -233,7 +233,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: "no"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:
@@ -248,7 +248,7 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-    restart: always
+    restart: "no"
     depends_on:
       <<: *airflow-common-depends-on
       airflow-init:

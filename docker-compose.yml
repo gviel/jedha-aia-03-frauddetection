@@ -19,7 +19,7 @@ services:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER:-fraud}"]
       interval: 5s
       retries: 5
-    restart: unless-stopped
+    restart: "no"
 
   api:
     build:
@@ -41,7 +41,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
+    restart: "no"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8000/health || exit 1"]
       interval: 10s
