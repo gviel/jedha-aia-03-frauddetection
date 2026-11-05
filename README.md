@@ -94,3 +94,4 @@ docs/                  documentation du projet
 ## Documentation
 
 - [`specs.md`](specs.md) — spécifications détaillées, phase par phase
+- [`docs/iam-aws.md`](docs/iam-aws.md) — accès AWS : user IAM dédié, droits S3, création/rotation de la clé, dépannage 403
