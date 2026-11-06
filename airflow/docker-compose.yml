@@ -67,6 +67,10 @@ x-airflow-common:
     REPORT_EMAIL: "${REPORT_EMAIL:-}"
     # Secret partagé avec fraud-detection-api (POST /reload-model) — même valeur des 2 côtés
     MODEL_RELOAD_TOKEN: "${MODEL_RELOAD_TOKEN:-}"
+    # Authentification du serveur MLflow (Space HF, basic-auth) : compte admin car le DAG 3.3
+    # (train.py) écrit dans MLflow. Vides en mode test (tracking SQLite local, sans auth).
+    MLFLOW_TRACKING_USERNAME: "${MLFLOW_TRACKING_USERNAME:-}"
+    MLFLOW_TRACKING_PASSWORD: "${MLFLOW_TRACKING_PASSWORD:-}"
     # DAG 3.3 (entraînement) — vérification du changement de données + subprocess
     DATA_PATH: "/opt/airflow/data/fraudTest.csv"
     DAG_TRAIN_CRON: "${DAG_TRAIN_CRON:-0 * * * *}"

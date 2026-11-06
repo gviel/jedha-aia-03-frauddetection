@@ -33,6 +33,8 @@ Bugs rencontrés + solutions (détail) : `docs/travail/troubleshooting.md`.
 |----------|---------|-------|
 | `MODEL_ENV` | `test` \| `prod` \| `staging` | Mode de chargement du modèle |
 | `MLFLOW_URI` | URL | Tracking server MLFlow (`api/app.py`, `src/train.py --env prod`, `dags/tasks/train_model.py:_new_model_is_global_best`). Lu uniquement pour un entraînement `--env prod` — `src/train.py --env test` ignore cette variable et pointe toujours vers un store SQLite local `work/mlflow_local.db` (jamais poussé, pour ne pas polluer l'expérience hébergée partagée avec la prod ; cf. specs.md §1.2). Pour la même raison, `dags/tasks/train_model.py::train()` ne compare/relance l'API que si `APP_ENV=="prod"` |
+| `MLFLOW_TRACKING_USERNAME` | `reader` (API) / `admin` (Airflow, `train.py`) | Compte du serveur MLflow (basic-auth). Lu nativement par le client MLflow. Vide en test (tracking SQLite local) |
+| `MLFLOW_TRACKING_PASSWORD` | secret | Mot de passe du compte ci-dessus (`api/.env.production`, `airflow/.env.production`, variables Render). Sans lui : 401 |
 | `MODEL_STATUS` | `best` | Tag MLFlow à filtrer |
 | `MODEL_NAME` | `fraud_detection` | Nom expérience MLFlow |
 | `MODEL_PATH` | chemin pkl | Modèle local en mode test — vide dans `api/.env.production` (ignoré si `MODEL_ENV≠test`) |

@@ -25,6 +25,8 @@ Le dashboard affiche les transactions temps réel collectées par le pipeline (s
 filtres par jour/niveau de risque) ainsi que le statut de l'API/modèle en production. `/docs` sur
 l'API expose un Swagger avec des exemples pour tester `/predict` directement.
 
+**Authentification MLflow.** Le serveur MLflow est protégé par une authentification HTTP basic (compte `reader` en lecture seule, compte `admin` pour écrire). Le client MLflow lit `MLFLOW_TRACKING_USERNAME` et `MLFLOW_TRACKING_PASSWORD` dans l'environnement : aucun changement de code. Sans ces variables, toute requête reçoit un 401. Ici : `reader` pour l'API (`api/.env.production`, variables Render), `admin` pour l'entraînement lancé par Airflow en mode prod (`airflow/.env.production`, transmis aux conteneurs par `airflow/start.sh` puis `airflow/docker-compose.yml`). En mode test, le tracking est un SQLite local : ces variables restent vides.
+
 [Vidéo de démo de l'architecture](https://youtu.be/8zfDwdCbX2Q)
 
 ## Fonctionnement (vue d'ensemble)
